@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block title %}KururuCMS — 10日で作る Django CMS{% endblock %}
+
+{% block content %}
+  <section class="hero">
+    <h1>KururuCMS</h1>
+    <p class="lead">
+      「10日で作る Django CMS」の成果物です。
+      1日目は、Django が URL を受け取ってテンプレートを返すところまでを確認します。
+    </p>
+  </section>
+
+  <section>
+    <h2>1日目に完成したもの</h2>
+    <ul class="checklist">
+      <li>Python 仮想環境と Django のインストール</li>
+      <li><code>config</code> プロジェクトと <code>accounts</code> / <code>blog</code> アプリ</li>
+      <li>カスタムユーザーモデル（最初の <code>migrate</code> より前に設定）</li>
+      <li>このトップページ</li>
+    </ul>
+  </section>
+{% endblock %}

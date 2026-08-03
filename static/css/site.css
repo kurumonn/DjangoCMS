@@ -1,0 +1,146 @@
+/* KururuCMS の基本スタイル。
+   外部フォント・外部CSSを読み込まない（CSP を厳格に保つため）。 */
+
+:root {
+  color-scheme: light dark;
+  --bg: #ffffff;
+  --fg: #1f2937;
+  --muted: #6b7280;
+  --border: #e5e7eb;
+  --surface: #f9fafb;
+  --accent: #2563eb;
+  --accent-fg: #ffffff;
+  --danger: #b91c1c;
+  --success: #15803d;
+  --radius: 10px;
+  --maxw: 78ch;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0f1115;
+    --fg: #e5e7eb;
+    --muted: #9ca3af;
+    --border: #2a2f3a;
+    --surface: #161a21;
+    --accent: #60a5fa;
+    --accent-fg: #0f1115;
+    --danger: #f87171;
+    --success: #4ade80;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: system-ui, -apple-system, "Segoe UI", "Hiragino Kaku Gothic ProN",
+    "Noto Sans JP", Meiryo, sans-serif;
+  line-height: 1.75;
+  font-size: 16px;
+}
+
+.container {
+  width: min(100% - 2rem, 72rem);
+  margin-inline: auto;
+}
+
+.skip-link {
+  position: absolute;
+  left: -9999px;
+}
+.skip-link:focus {
+  left: 1rem;
+  top: 1rem;
+  z-index: 10;
+  background: var(--accent);
+  color: var(--accent-fg);
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius);
+}
+
+/* ヘッダー */
+.site-header {
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+.header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-block: 0.85rem;
+  flex-wrap: wrap;
+}
+.brand {
+  font-weight: 700;
+  font-size: 1.15rem;
+  text-decoration: none;
+  color: var(--fg);
+}
+.site-nav {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+.nav-user { color: var(--muted); font-size: 0.9rem; }
+
+a { color: var(--accent); }
+
+/* 本文 */
+main { padding-block: 2rem 3rem; }
+h1 { font-size: clamp(1.6rem, 1.2rem + 1.6vw, 2.3rem); line-height: 1.3; }
+h2 { font-size: 1.35rem; margin-top: 2.5rem; }
+.lead { color: var(--muted); max-width: var(--maxw); }
+p, li { max-width: var(--maxw); }
+
+code {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0.1em 0.35em;
+  font-size: 0.9em;
+}
+
+pre {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem;
+  overflow-x: auto;
+}
+pre code { background: none; border: 0; padding: 0; }
+
+/* 横長コンテンツは自身の中でスクロールさせ、ページ本体を横スクロールさせない */
+table { width: 100%; border-collapse: collapse; }
+.table-wrap { overflow-x: auto; }
+th, td { border: 1px solid var(--border); padding: 0.5rem 0.7rem; text-align: left; }
+th { background: var(--surface); }
+
+img { max-width: 100%; height: auto; }
+
+.checklist { padding-left: 1.2rem; }
+
+/* メッセージ */
+.messages { list-style: none; padding: 0; margin: 1rem 0 0; }
+.message {
+  border: 1px solid var(--border);
+  border-left-width: 4px;
+  border-radius: var(--radius);
+  padding: 0.7rem 1rem;
+  margin-bottom: 0.5rem;
+  background: var(--surface);
+}
+.message--error { border-left-color: var(--danger); }
+.message--success { border-left-color: var(--success); }
+
+/* フッター */
+.site-footer {
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 0.9rem;
+  padding-block: 1.25rem;
+}

@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Django
+db.sqlite3
+db.sqlite3-journal
+/media/
+/staticfiles/
+*.log
+
+# 秘密情報 — 絶対にコミットしない
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+id_ed25519
+id_rsa
+credentials.json
+secrets/
+
+# エディタ・OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

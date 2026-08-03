@@ -1,0 +1,51 @@
+{% load static %}<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}KururuCMS{% endblock %}</title>
+  {# 外部CDNを一切使わない。すべて自ホストから配信するため、  #}
+  {# 10日目で導入する Content-Security-Policy が緩まずに済む。 #}
+  <link rel="stylesheet" href="{% static 'css/site.css' %}">
+  {% block head_extra %}{% endblock %}
+</head>
+<body>
+  <a class="skip-link" href="#main">本文へスキップ</a>
+
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" href="{% url 'blog:index' %}">KururuCMS</a>
+      <nav class="site-nav" aria-label="グローバルナビゲーション">
+        {% if user.is_authenticated %}
+          <span class="nav-user">{{ user.byline }}</span>
+          {# 管理画面のURLはハードコードせず、名前解決する。            #}
+          {# 環境変数でパスを変えても、テンプレートの修正が不要になる。 #}
+          {% if user.is_staff %}<a href="{% url 'admin:index' %}">管理</a>{% endif %}
+        {% endif %}
+      </nav>
+    </div>
+  </header>
+
+  {% if messages %}
+    <div class="container">
+      <ul class="messages" role="status">
+        {% for message in messages %}
+          <li class="message message--{{ message.tags }}">{{ message }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+  {% endif %}
+
+  <main id="main" class="container">
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <p>&copy; {% now "Y" %} KururuCMS — 10日で作る Django CMS の成果物</p>
+    </div>
+  </footer>
+
+  {% block body_extra %}{% endblock %}
+</body>
+</html>
