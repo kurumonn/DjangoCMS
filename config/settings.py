@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     # 自作アプリ
     "accounts",
     "blog",
+    "pages",
 ]
 
 MIDDLEWARE = [
