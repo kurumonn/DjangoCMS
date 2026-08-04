@@ -157,6 +157,71 @@ class ReviewWorkflowTests(TestCase):
         self.assertEqual(entry.detail["note"], "出典を追記してください")
 
 
+class EditorCanEditOthersArticleTests(TestCase):
+    """編集者は、管理画面権限（is_staff）が無くても他人の記事を編集できる。
+
+    ここを is_staff だけで判定していると、
+    「レビューして公開する役目なのに本文を直せない」状態になる。
+    ブラウザーで編集画面を開いて 403 になり、初めて気づいた。
+    """
+
+    def setUp(self):
+        self.category = create_category()
+        self.author = create_author(username="edit-author")
+        self.editor = create_editor(username="edit-editor")
+        self.article = create_article(
+            title="他人の記事", author=self.author, category=self.category
+        )
+
+    def test_editor_is_not_staff(self):
+        """前提の確認。is_staff を付けずに編集できることが要点。"""
+        self.assertFalse(self.editor.is_staff)
+
+    def test_editor_can_open_edit_form(self):
+        self.client.login(username="edit-editor", password=PASSWORD)
+        response = self.client.get(
+            reverse("blog:article_update", args=[self.article.slug])
+        )
+        self.assertEqual(response.status_code, 200)
+
+    def test_editor_can_view_revisions(self):
+        self.client.login(username="edit-editor", password=PASSWORD)
+        response = self.client.get(
+            reverse("blog:article_revisions", args=[self.article.slug])
+        )
+        self.assertEqual(response.status_code, 200)
+
+    def test_editor_can_autosave_others_article(self):
+        """画面と自動保存 API で判定がそろっていること。"""
+        import json
+
+        from django.core.cache import cache
+
+        cache.clear()
+        self.client.login(username="edit-editor", password=PASSWORD)
+        response = self.client.post(
+            reverse("dashboard:autosave", args=[self.article.pk]),
+            data=json.dumps(
+                {
+                    "title": "編集者が直した題名",
+                    "blocks": [{"type": "paragraph", "data": {"text": "本文"}}],
+                    "version": self.article.version,
+                }
+            ),
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 200)
+
+    def test_plain_author_still_cannot_edit_others(self):
+        """権限を広げすぎていないこと。投稿者は他人の記事を触れない。"""
+        create_author(username="edit-plain")
+        self.client.login(username="edit-plain", password=PASSWORD)
+        response = self.client.get(
+            reverse("blog:article_update", args=[self.article.slug])
+        )
+        self.assertEqual(response.status_code, 403)
+
+
 class ScheduledPublishTests(TestCase):
     def setUp(self):
         self.category = create_category()

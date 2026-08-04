@@ -46,10 +46,21 @@ def _can_edit(user, article: Article) -> bool:
 
     判定をここ1か所にまとめる。View・テンプレート・API で
     別々の条件を書くと、片方だけ直し忘れて権限が抜ける。
+
+    「他人の記事も編集してよい人」の判定に is_staff だけを使わないこと。
+    is_staff は「Django の管理画面へ入れる」という意味であって、
+    「編集者である」という意味ではない。
+
+    この CMS では、編集者ロールに blog.review_article を与えている。
+    レビューして公開する役目である以上、本文を直せなければ仕事にならない。
+    is_staff だけを見ていると、編集者が他人の記事を開いた瞬間に 403 になる。
     """
     if not user.is_authenticated:
         return False
     if user.is_staff:
+        return True
+    # 編集者（レビュー権限を持つ人）は、どの記事でも編集できる。
+    if user.has_perm("blog.review_article"):
         return True
     return article.author_id == user.pk
 

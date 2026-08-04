@@ -69,7 +69,12 @@ class AutosaveView(View):
             return _error("記事が見つかりません。", 404)
 
         # --- 3. 権限 -----------------------------------------------------
-        if not (request.user.is_staff or article.author_id == request.user.pk):
+        # 画面側と同じ判定関数を使う。
+        # ここで独自の条件を書くと、画面では編集できるのに
+        # 自動保存だけ 403 になる、といった食い違いが起きる。
+        from blog.views import _can_edit
+
+        if not _can_edit(request.user, article):
             # 存在は知られているので 403 でよい（pk は本人が持っている前提）。
             return _error("この記事を編集する権限がありません。", 403)
 

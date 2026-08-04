@@ -49,6 +49,10 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "django.contrib.sitemaps",
+    # allauth の「パスキー一覧」「ログイン中の端末」テンプレートが
+    # naturaltime フィルタを使う。入れ忘れると、その画面だけ
+    # KeyError: 'humanize' で落ちる。
+    "django.contrib.humanize",
     # django-allauth（8日目）
     # sites は socialaccount が使う。SITE_ID と合わせて必要。
     "django.contrib.sites",
@@ -59,6 +63,8 @@ INSTALLED_APPS = [
     "allauth.socialaccount.providers.github",
     # ログイン中のセッション一覧と、他端末からのログアウト
     "allauth.usersessions",
+    # 多要素認証（9日目）: TOTP / リカバリコード / パスキー
+    "allauth.mfa",
     # 自作アプリ
     "core",
     "accounts",
@@ -82,6 +88,10 @@ MIDDLEWARE = [
     # 入れ忘れると、ログイン処理の途中で必ず例外になる。
     "allauth.account.middleware.AccountMiddleware",
     "allauth.usersessions.middleware.UserSessionsMiddleware",
+    # 管理者に多要素認証を必須にする（9日目）。
+    # allauth のミドルウェアより後に置く。
+    # 先に置くと、allauth がセッションを整える前に判定してしまう。
+    "accounts.middleware.StaffMfaRequiredMiddleware",
 ]
 
 ROOT_URLCONF = "config.urls"
@@ -257,6 +267,56 @@ SOCIALACCOUNT_PROVIDERS = {
         "SCOPE": ["user:email"],
     },
 }
+# ---------------------------------------------------------------------------
+# 多要素認証・パスキー（9日目）
+# ---------------------------------------------------------------------------
+# 3種類を有効にする。用途が違うので、どれか1つでは足りない。
+#
+#   totp           … スマートフォンの認証アプリ。端末を持っていれば使える。
+#   recovery_codes … 認証アプリを失ったときの最後の手段。紙に印刷して保管する。
+#   webauthn       … パスキー。端末の生体認証や物理キー。フィッシングに強い。
+#
+# recovery_codes を外すと、スマートフォンを失くした利用者が
+# 二度とログインできなくなる。必ず入れる。
+MFA_SUPPORTED_TYPES = ["totp", "recovery_codes", "webauthn"]
+
+# パスキーだけでログインできるようにする（パスワード入力なし）。
+MFA_PASSKEY_LOGIN_ENABLED = True
+# 登録時のパスキー作成は無効のまま。
+# 最初からパスキーだけで作らせると、その端末を失った時点で復旧手段が無くなる。
+MFA_PASSKEY_SIGNUP_ENABLED = False
+
+MFA_TOTP_ISSUER = os.environ.get("DJANGO_MFA_ISSUER", "KururuCMS")
+MFA_TOTP_PERIOD = 30
+MFA_TOTP_DIGITS = 6
+# 時計のずれを吸収する幅（秒）。広げすぎると総当たりが楽になる。
+MFA_TOTP_TOLERANCE = 30
+
+MFA_RECOVERY_CODE_COUNT = 10
+MFA_RECOVERY_CODE_DIGITS = 8
+# リカバリコードは発行時に一度だけ見せる。
+# 後からいつでも見られる状態にすると、画面を覗かれただけで突破される。
+MFA_RECOVERY_CODES_SHOW_ONCE = True
+
+# WebAuthn は HTTPS でしか動かない（localhost は例外扱い）。
+# 開発中だけ緩め、本番では必ず False にする。
+#
+# 「DEBUG と同じ値にしておけば安全」では不十分。
+# DEBUG は環境変数の書き忘れで True のまま本番へ出ることがあり、
+# そのとき WebAuthn の保護まで一緒に外れてしまう。
+# 独立した環境変数にしたうえで、accounts/checks.py の
+# システムチェックで「本番なのに有効」を検出する。
+MFA_WEBAUTHN_ALLOW_INSECURE_ORIGIN = (
+    os.environ.get("DJANGO_MFA_ALLOW_INSECURE_ORIGIN", "1" if DEBUG else "0") == "1"
+)
+
+# パスキーやTOTPの削除など、重要な操作の前に再認証を求める。
+MFA_ALLOW_UNVERIFIED_EMAIL = False
+
+# 管理画面へ入れる利用者には多要素認証を必須にする。
+# 記事を書くだけの利用者にまで強制すると運用が回らないため、対象を絞る。
+MFA_REQUIRED_FOR_STAFF = os.environ.get("DJANGO_MFA_REQUIRED_FOR_STAFF", "1") == "1"
+
 # ソーシャル側で確認済みのメールアドレスは、こちらで再確認しない。
 SOCIALACCOUNT_EMAIL_AUTHENTICATION = False
 # 既存アカウントへ自動で紐づけない。

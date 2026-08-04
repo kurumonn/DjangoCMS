@@ -53,11 +53,27 @@ def create_author(username="writer", **kwargs):
 
 
 def create_staff(username="editor", **kwargs):
-    """スタッフ（他人の記事も編集できる）。"""
+    """スタッフ（他人の記事も編集できる）。
+
+    9日目に「管理者は多要素認証が必須」というミドルウェアを入れた。
+    実運用では is_staff の利用者が認証手段を登録するまで他の画面へ進めない。
+    テスト用のスタッフも同じ状態にそろえないと、
+    「テストでは動くのに実際には設定画面へ飛ばされる」という食い違いが起きる。
+    """
     user = create_user(username=username, is_staff=True, **kwargs)
-    return grant(
+    user = grant(
         user, "blog.add_article", "blog.change_article", "blog.delete_article"
     )
+    add_totp(user)
+    return user
+
+
+def add_totp(user):
+    """TOTP を登録済みにする（多要素認証の設定を済ませた状態）。"""
+    from allauth.mfa.totp.internal import auth as totp_auth
+
+    secret = totp_auth.generate_totp_secret()
+    return totp_auth.TOTP.activate(user, secret).instance
 
 
 def create_editor(username="reviewer", **kwargs):
