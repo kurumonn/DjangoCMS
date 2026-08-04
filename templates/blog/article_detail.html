@@ -31,6 +31,16 @@
       {% endif %}
     </header>
 
+    {% if article.featured_image %}
+      <figure class="featured-image">
+        <img src="{{ article.featured_image.file.url }}"
+             alt="{{ article.featured_image.display_alt }}"
+             width="{{ article.featured_image.width }}"
+             height="{{ article.featured_image.height }}"
+             loading="lazy" decoding="async">
+      </figure>
+    {% endif %}
+
     {# linebreaks は HTML をエスケープしたうえで改行を <p>/<br> に変換する。 #}
     {# ここで |safe を使うと投稿者が自由に <script> を仕込めるようになる。 #}
     <div class="article__body">{{ article.body|linebreaks }}</div>
@@ -41,6 +51,81 @@
       <a class="btn" href="{% url 'blog:article_update' article.slug %}">編集</a>
       <a class="btn btn--danger" href="{% url 'blog:article_delete' article.slug %}">削除</a>
     </p>
+  {% endif %}
+
+  {% if related_articles %}
+    <section class="related">
+      <h2>関連記事</h2>
+      <ul class="article-list">
+        {% for related in related_articles %}
+          <li class="article-card">
+            <h3 class="article-card__title">
+              <a href="{{ related.get_absolute_url }}">{{ related.title }}</a>
+            </h3>
+            <p class="article-card__meta">{{ related.category.name }}</p>
+          </li>
+        {% endfor %}
+      </ul>
+    </section>
+  {% endif %}
+
+  {% if not is_preview %}
+    <section class="comments">
+      <h2>コメント（{{ comments|length }}）</h2>
+
+      {% for comment in comments %}
+        <article class="comment">
+          <p class="comment__meta">
+            <strong>{{ comment.display_name }}</strong>
+            <time datetime="{{ comment.created_at|date:'c' }}">
+              {{ comment.created_at|date:"Y年n月j日 H:i" }}
+            </time>
+          </p>
+          {# コメント本文は必ずエスケープする。|safe を付けてはいけない。 #}
+          <div class="comment__body">{{ comment.body|linebreaks }}</div>
+        </article>
+      {% empty %}
+        <p class="empty">まだコメントはありません。</p>
+      {% endfor %}
+
+      <h3>コメントを書く</h3>
+      <p class="help">投稿されたコメントは、管理者の承認後に表示されます。</p>
+
+      <form method="post" action="{% url 'comments:create' article.slug %}" class="form">
+        {% csrf_token %}
+
+        {% if comment_form.non_field_errors %}
+          <ul class="messages">
+            {% for error in comment_form.non_field_errors %}
+              <li class="message message--error">{{ error }}</li>
+            {% endfor %}
+          </ul>
+        {% endif %}
+
+        {% for field in comment_form %}
+          {% if field.name == "website" %}
+            {# ハニーポット。人間には見せず、ボットだけが埋める欄。 #}
+            <div class="honeypot-wrap" aria-hidden="true">
+              <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+              {{ field }}
+            </div>
+          {% elif field.is_hidden %}
+            {{ field }}
+          {% else %}
+            <div class="field">
+              <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+              {{ field }}
+              {% if field.help_text %}<p class="help">{{ field.help_text }}</p>{% endif %}
+              {% for error in field.errors %}<p class="error">{{ error }}</p>{% endfor %}
+            </div>
+          {% endif %}
+        {% endfor %}
+
+        <p class="action-row">
+          <button type="submit" class="btn btn--primary">送信</button>
+        </p>
+      </form>
+    </section>
   {% endif %}
 
   <p><a href="{% url 'blog:article_list' %}">← 記事一覧へ戻る</a></p>

@@ -68,10 +68,16 @@ class ArticleDetailView(DetailView):
         raise Http404("記事が見つかりません。")
 
     def get_context_data(self, **kwargs):
+        from comments.forms import CommentForm
+
         context = super().get_context_data(**kwargs)
         article = context["article"]
         context["is_preview"] = not article.is_visible_to_public
         context["can_edit"] = _can_edit(self.request.user, article)
+        # 一般利用者へ見せるのは承認済みコメントだけ。
+        context["comments"] = article.comments.approved()
+        context["comment_form"] = CommentForm(user=self.request.user)
+        context["related_articles"] = article.related_articles()
         return context
 
 
@@ -147,6 +153,27 @@ class ArticleDeleteView(
     def form_valid(self, form):
         messages.success(self.request, "記事を削除しました。")
         return super().form_valid(form)
+
+
+class SearchView(ArticleListView):
+    """サイト内検索。
+
+    検索語は URL のクエリ文字列（?q=...）で受け取る。
+    検索は状態を変えない操作なので GET でよい。
+    """
+
+    template_name = "blog/search.html"
+
+    def get_queryset(self):
+        self.query = self.request.GET.get("q", "").strip()[:100]
+        if not self.query:
+            return Article.objects.none()
+        return Article.objects.published().search(self.query).with_related()
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["query"] = self.query
+        return context
 
 
 class CategoryArticleListView(ArticleListView):

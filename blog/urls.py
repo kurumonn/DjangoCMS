@@ -13,6 +13,7 @@ app_name = "blog"
 
 urlpatterns = [
     path("", views.ArticleListView.as_view(), name="article_list"),
+    path("search/", views.SearchView.as_view(), name="search"),
     path("articles/new/", views.ArticleCreateView.as_view(), name="article_create"),
     path("articles/<slug:slug>/", views.ArticleDetailView.as_view(), name="article_detail"),
     path(

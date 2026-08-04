@@ -85,7 +85,30 @@ class ArticleQuerySet(models.QuerySet):
 
     def with_related(self):
         """一覧表示で N+1 クエリを防ぐための事前読み込み。"""
-        return self.select_related("author", "category").prefetch_related("tags")
+        return self.select_related(
+            "author", "category", "featured_image"
+        ).prefetch_related("tags")
+
+    def search(self, query: str):
+        """タイトルと本文からの全文検索。
+
+        SQLite / PostgreSQL のどちらでも動くよう、まずは icontains で実装する。
+        PostgreSQL へ移行したあとは SearchVector に差し替えられるよう、
+        検索条件をこの1メソッドへ閉じ込めておく。
+        """
+        from django.db.models import Q
+
+        query = (query or "").strip()
+        if not query:
+            return self.none()
+
+        # 空白区切りの語をすべて含む記事を返す（AND 検索）。
+        queryset = self
+        for term in query.split()[:5]:  # 語数を制限し、極端に重いクエリを防ぐ
+            queryset = queryset.filter(
+                Q(title__icontains=term) | Q(body__icontains=term)
+            )
+        return queryset
 
 
 class Article(models.Model):
@@ -126,6 +149,19 @@ class Article(models.Model):
         verbose_name="タグ",
     )
 
+    # アイキャッチ画像。
+    # ImageField を直接持たせるのではなく、メディアライブラリを参照する。
+    # 直接持たせると、同じ画像を記事ごとに再アップロードすることになり、
+    # 差し替えも一括でできない。
+    featured_image = models.ForeignKey(
+        "media_library.MediaAsset",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="featured_articles",
+        verbose_name="アイキャッチ画像",
+    )
+
     status = models.CharField(
         "公開状態",
         max_length=20,
@@ -163,6 +199,33 @@ class Article(models.Model):
 
     def get_absolute_url(self) -> str:
         return reverse("blog:article_detail", kwargs={"slug": self.slug})
+
+    def related_articles(self, limit: int = 4):
+        """関連記事を返す。
+
+        「同じタグが多く付いている記事」を優先し、足りなければ同じカテゴリで埋める。
+        自分自身と未公開記事は必ず除外する。
+        """
+        from django.db.models import Count
+
+        base = Article.objects.published().with_related().exclude(pk=self.pk)
+
+        tag_ids = list(self.tags.values_list("id", flat=True))
+        results = []
+        if tag_ids:
+            results = list(
+                base.filter(tags__in=tag_ids)
+                .annotate(shared=Count("tags"))
+                .order_by("-shared", "-published_at")
+                .distinct()[:limit]
+            )
+
+        if len(results) < limit:
+            seen = {a.pk for a in results}
+            filler = base.filter(category=self.category).exclude(pk__in=seen)
+            results.extend(filler[: limit - len(results)])
+
+        return results
 
     @property
     def is_visible_to_public(self) -> bool:

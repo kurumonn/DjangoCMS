@@ -20,7 +20,15 @@ class ArticleForm(forms.ModelForm):
 
     class Meta:
         model = Article
-        fields = ["title", "body", "category", "tags", "status", "published_at"]
+        fields = [
+            "title",
+            "body",
+            "category",
+            "tags",
+            "featured_image",
+            "status",
+            "published_at",
+        ]
         widgets = {
             "body": forms.Textarea(attrs={"rows": 18}),
             "published_at": forms.DateTimeInput(

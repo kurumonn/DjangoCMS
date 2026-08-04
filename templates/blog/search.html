@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block title %}
+  {% if query %}「{{ query }}」の検索結果{% else %}サイト内検索{% endif %} | KururuCMS
+{% endblock %}
+
+{% block content %}
+  <h1>サイト内検索</h1>
+
+  {# 検索は状態を変えないので GET。ブックマークや共有もできる。 #}
+  <form method="get" action="{% url 'blog:search' %}" class="search-form" role="search">
+    <label class="visually-hidden" for="q">検索語</label>
+    <input type="search" id="q" name="q" value="{{ query }}" placeholder="キーワード"
+           maxlength="100" autocomplete="off">
+    <button type="submit" class="btn btn--primary">検索</button>
+  </form>
+
+  {% if query %}
+    <p class="search-summary">
+      「{{ query }}」の検索結果: {{ paginator.count|default:"0" }} 件
+    </p>
+
+    {% if articles %}
+      <ul class="article-list">
+        {% for article in articles %}
+          <li class="article-card">
+            <h2 class="article-card__title">
+              <a href="{{ article.get_absolute_url }}">{{ article.title }}</a>
+            </h2>
+            <p class="article-card__meta">
+              <time datetime="{{ article.published_at|date:'c' }}">
+                {{ article.published_at|date:"Y年n月j日" }}
+              </time>
+              ・{{ article.category.name }}
+            </p>
+            <p class="article-card__excerpt">{{ article.body|truncatechars:120 }}</p>
+          </li>
+        {% endfor %}
+      </ul>
+
+      {% if is_paginated %}
+        <nav class="pagination" aria-label="ページ送り">
+          {% if page_obj.has_previous %}
+            <a href="?q={{ query|urlencode }}&amp;page={{ page_obj.previous_page_number }}">前へ</a>
+          {% endif %}
+          <span>{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+          {% if page_obj.has_next %}
+            <a href="?q={{ query|urlencode }}&amp;page={{ page_obj.next_page_number }}">次へ</a>
+          {% endif %}
+        </nav>
+      {% endif %}
+    {% else %}
+      <p class="empty">一致する記事が見つかりませんでした。</p>
+    {% endif %}
+  {% endif %}
+{% endblock %}

@@ -236,6 +236,78 @@ img { max-width: 100%; height: auto; }
 }
 .inline-form { display: inline; margin: 0; }
 
+/* 検索 */
+.nav-search { margin: 0; }
+.nav-search input[type="search"] {
+  padding: 0.35rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+  color: var(--fg);
+  font: inherit;
+  width: 10rem;
+  max-width: 40vw;
+}
+.search-form { display: flex; gap: 0.5rem; margin: 1.5rem 0; flex-wrap: wrap; }
+.search-form input[type="search"] {
+  flex: 1 1 16rem;
+  min-width: 0;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+  color: var(--fg);
+  font: inherit;
+}
+.search-summary { color: var(--muted); }
+.article-card__excerpt { color: var(--muted); font-size: 0.92rem; margin: 0.35rem 0 0; }
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* アイキャッチ */
+.featured-image { margin: 1.5rem 0 0; }
+.featured-image img { border-radius: var(--radius); display: block; }
+
+/* 関連記事・コメント */
+.related, .comments { margin-top: 3rem; }
+.comment {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.9rem 1.1rem;
+  margin-bottom: 0.75rem;
+  background: var(--surface);
+}
+.comment__meta {
+  color: var(--muted);
+  font-size: 0.85rem;
+  margin: 0;
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+.comment__body { margin-top: 0.3rem; }
+.comment__body p:last-child { margin-bottom: 0; }
+
+/* ハニーポット。
+   display:none だと一部のボットに「隠し欄」と気づかれるため、
+   画面外へ追い出しつつ、支援技術からも隠す。 */
+.honeypot-wrap {
+  position: absolute;
+  left: -10000px;
+  top: auto;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
 /* フッター */
 .site-footer {
   border-top: 1px solid var(--border);

@@ -49,9 +49,12 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     # 自作アプリ
+    "core",
     "accounts",
     "blog",
     "pages",
+    "media_library",
+    "comments",
 ]
 
 MIDDLEWARE = [
@@ -143,6 +146,19 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
+
+# アップロードの上限。Django が受け取る段階で切るための保険。
+# 実際の検証は media_library/validators.py が行う。
+# Nginx 側でも client_max_body_size を設定する（デプロイ編6日目）。
+DATA_UPLOAD_MAX_MEMORY_SIZE = 6 * 1024 * 1024   # 6 MiB
+FILE_UPLOAD_MAX_MEMORY_SIZE = 6 * 1024 * 1024
+# フォームの項目数の上限。極端に多い項目を送りつけるDoSを防ぐ。
+DATA_UPLOAD_MAX_NUMBER_FIELDS = 500
+
+# 信頼できるリバースプロキシの段数。
+# 0 のとき X-Forwarded-For を一切信用しない（開発既定）。
+# Nginx の背後に置いたら 1 にする（デプロイ編6日目）。
+TRUSTED_PROXY_COUNT = int(os.environ.get("DJANGO_TRUSTED_PROXY_COUNT", "0"))
 
 # ---------------------------------------------------------------------------
 # セキュリティ既定値

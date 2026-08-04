@@ -16,6 +16,10 @@
     <div class="container header-inner">
       <a class="brand" href="{% url 'blog:article_list' %}">KururuCMS</a>
       <nav class="site-nav" aria-label="グローバルナビゲーション">
+        <form method="get" action="{% url 'blog:search' %}" class="nav-search" role="search">
+          <label class="visually-hidden" for="nav-q">サイト内検索</label>
+          <input type="search" id="nav-q" name="q" placeholder="検索" maxlength="100">
+        </form>
         {% if user.is_authenticated %}
           {% if perms.blog.add_article %}
             <a href="{% url 'blog:article_create' %}">記事を書く</a>
