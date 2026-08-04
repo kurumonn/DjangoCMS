@@ -1,4 +1,13 @@
-# KururuCMS の依存パッケージ（1日目時点）
-# 日ごとに必要なものを追加していく。
+# KururuCMS の依存パッケージ
+#
+# 追加した日:
+#   1日目  Django, argon2-cffi
+#   4日目  Pillow（アップロード画像の実体検証）
+#   8日目  django-allauth（認証）, fido2 と qrcode は 9日目のパスキー/TOTP 用
 Django==5.2.15
 argon2-cffi==25.1.0
+Pillow==12.3.0
+django-allauth==65.18.0
+# django-allauth[mfa] が引く依存。9日目で使う。
+qrcode==8.2
+fido2==2.2.1

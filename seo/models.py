@@ -7,6 +7,7 @@ WordPress でいう「サイト設定」と「テーマ」に相当する部分�
 
 from __future__ import annotations
 
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator
 from django.db import models
@@ -81,6 +82,35 @@ class SiteSetting(models.Model):
         # URL の末尾スラッシュを落として、二重スラッシュを防ぐ。
         self.base_url = (self.base_url or "").rstrip("/")
         super().save(*args, **kwargs)
+        self._sync_django_site()
+
+    def _sync_django_site(self) -> None:
+        """django.contrib.sites の Site をこの設定に合わせる。
+
+        allauth が送るメールは Site の名前とドメインを使う。
+        同期しないと、確認メールの差出人や本文が
+        「example.com」（Django の初期値）のままになる。
+
+        本番で気づいたときには、その文面のメールが既に配信済みになる。
+        設定を1か所にまとめて、忘れようがない形にしておく。
+        """
+        from urllib.parse import urlsplit
+
+        try:
+            from django.contrib.sites.models import Site
+        except Exception:  # sites を外している構成
+            return
+
+        netloc = urlsplit(self.base_url).netloc
+        if not netloc:
+            return
+
+        site_id = getattr(settings, "SITE_ID", 1)
+        Site.objects.update_or_create(
+            pk=site_id, defaults={"domain": netloc, "name": self.site_name}
+        )
+        # get_current() はキャッシュを持つので、明示的に捨てる。
+        Site.objects.clear_cache()
 
     def delete(self, *args, **kwargs):
         raise ValidationError("サイト設定は削除できません。")

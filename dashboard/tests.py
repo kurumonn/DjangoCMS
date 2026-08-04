@@ -38,7 +38,7 @@ class DashboardViewTests(TestCase):
     def test_anonymous_is_redirected(self):
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, 302)
-        self.assertIn(reverse("login"), response.url)
+        self.assertIn(reverse("account_login"), response.url)
 
     def test_counts_are_correct(self):
         create_article(title="公開1", author=self.author, category=self.category)

@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% comment %}
+django-allauth の画面を、このサイトの見た目へ合わせるための土台。
+
+allauth は自前の素朴な HTML を同梱している。
+そのまま使うとログイン画面だけ見た目が違うサイトになるので、
+このファイルを置いて差し替える。
+
+差し替えの要点:
+
+  * allauth の子テンプレートは content ブロックを埋める。
+    ここで content を再定義してしまうと名前が衝突するので、
+    content には触れず、そのまま base.html へ通す。
+  * 代わりに breadcrumb ブロックへアカウント用のナビを差し込む。
+  * 認証画面は検索結果に出す必要がないので noindex にする。
+
+このファイルを書くときに踏んだ罠が2つある。
+
+  1. 複数行コメントに {% templatetag openbrace %}# ... #{% templatetag closebrace %}
+     を使うと、中に書いたタグが本物として解釈される。
+     これは1行コメント専用。複数行は
+     {% templatetag openblock %} comment {% templatetag closeblock %} を使う。
+
+  2. {% templatetag openblock %} extends {% templatetag closeblock %} は
+     テンプレート内の最初のタグでなければならない。
+     このコメントを先頭に置くと
+     「must be the first tag」で全画面が落ちる。
+{% endcomment %}
+
+{% block title %}{% block head_title %}アカウント{% endblock head_title %} | {{ site_setting.site_name }}{% endblock %}
+
+{% block head_extra %}
+  {# ログイン・登録・パスワード再設定の画面を検索結果へ出さない。 #}
+  <meta name="robots" content="noindex, nofollow">
+  {% block extra_head %}{% endblock extra_head %}
+{% endblock %}
+
+{% block breadcrumb %}
+  {% if user.is_authenticated %}
+    {% include "partials/account_nav.html" %}
+  {% endif %}
+{% endblock %}
+
+{% block body_extra %}
+  {% block extra_body %}{% endblock extra_body %}
+{% endblock %}

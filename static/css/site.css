@@ -333,6 +333,52 @@ main { min-width: 0; }
 .featured-image { margin: 1.5rem 0 0; }
 .featured-image img { border-radius: var(--radius); display: block; }
 
+/* アカウント設定ナビ */
+.account-nav {
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.5rem;
+}
+.account-nav ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  font-size: 0.9rem;
+}
+.account-nav li { max-width: none; }
+
+/* allauth のフォームは素の HTML なので、最低限の体裁を整える */
+main form input[type="text"],
+main form input[type="email"],
+main form input[type="password"],
+main form input[type="url"],
+main form input[type="tel"] {
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+  color: var(--fg);
+  font: inherit;
+  max-width: 26rem;
+  width: 100%;
+}
+main form button,
+main form input[type="submit"] {
+  display: inline-block;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  padding: 0.45rem 1rem;
+  background: var(--accent);
+  color: var(--accent-fg);
+  font: inherit;
+  cursor: pointer;
+}
+main form p { margin: 0.75rem 0; }
+main form ul.errorlist { color: var(--danger); padding-left: 1.2rem; }
+
 /* ダッシュボードの集計 */
 .stat-row {
   display: grid;

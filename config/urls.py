@@ -12,9 +12,21 @@ urlpatterns = [
     # 管理画面のパスは環境変数で変更できるようにしておく。
     # 既定の /admin/ は総当たり攻撃の標的になりやすい。
     path(f"{settings.ADMIN_URL_PATH}/", admin.site.urls),
-    # ログイン・ログアウト・パスワード変更。
-    # 8日目に django-allauth へ置き換える。
-    path("accounts/", include("django.contrib.auth.urls")),
+    # 認証は django-allauth に任せる（8日目）。
+    #   /accounts/login/            ログイン（メールアドレス＋パスワード）
+    #   /accounts/login/code/       メールワンタイムコードでログイン
+    #   /accounts/signup/           ユーザー登録
+    #   /accounts/email/            メールアドレスの管理
+    #   /accounts/password/change/  パスワード変更
+    #   /accounts/3rdparty/         ソーシャルアカウント連携
+    #   /accounts/sessions/         ログイン中の端末一覧
+    #
+    # allauth.urls は、INSTALLED_APPS の中身を見て
+    # socialaccount / mfa / usersessions の URL を自動で足す。
+    # それぞれを個別に include してはいけない。
+    # 同じ URL 名が二重に登録され、reverse() が後から登録した方を返すため、
+    # リンク先が意図しないパスになる。
+    path("accounts/", include("allauth.urls")),
     path("dashboard/", include("dashboard.urls")),
     path("pages/", include("pages.urls")),
     # sitemap.xml / feed / robots.txt はサイト直下に置く。

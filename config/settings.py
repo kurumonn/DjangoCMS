@@ -49,6 +49,16 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "django.contrib.sitemaps",
+    # django-allauth（8日目）
+    # sites は socialaccount が使う。SITE_ID と合わせて必要。
+    "django.contrib.sites",
+    "allauth",
+    "allauth.account",
+    "allauth.socialaccount",
+    "allauth.socialaccount.providers.google",
+    "allauth.socialaccount.providers.github",
+    # ログイン中のセッション一覧と、他端末からのログアウト
+    "allauth.usersessions",
     # 自作アプリ
     "core",
     "accounts",
@@ -68,6 +78,10 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    # allauth が必須とするミドルウェア。
+    # 入れ忘れると、ログイン処理の途中で必ず例外になる。
+    "allauth.account.middleware.AccountMiddleware",
+    "allauth.usersessions.middleware.UserSessionsMiddleware",
 ]
 
 ROOT_URLCONF = "config.urls"
@@ -130,9 +144,125 @@ AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 
-LOGIN_URL = "login"
-LOGIN_REDIRECT_URL = "/"
+SITE_ID = 1
+
+AUTHENTICATION_BACKENDS = [
+    # 管理画面用。ユーザー名とパスワードで認証する。
+    "django.contrib.auth.backends.ModelBackend",
+    # allauth 用。メールアドレスやソーシャルログインを扱う。
+    "allauth.account.auth_backends.AuthenticationBackend",
+]
+
+LOGIN_URL = "account_login"
+LOGIN_REDIRECT_URL = "/dashboard/"
 LOGOUT_REDIRECT_URL = "/"
+
+# ---------------------------------------------------------------------------
+# django-allauth（8日目）
+# ---------------------------------------------------------------------------
+# ログインはメールアドレスで行う。
+# ユーザー名は表示用に残すが、ログインには使わない。
+ACCOUNT_LOGIN_METHODS = {"email"}
+ACCOUNT_SIGNUP_FIELDS = ["email*", "password1*", "password2*"]
+ACCOUNT_UNIQUE_EMAIL = True
+
+# メール確認を必須にする。
+# "optional" にすると、他人のメールアドレスで登録して
+# そのアドレス宛の通知を受け取れてしまう。
+ACCOUNT_EMAIL_VERIFICATION = "mandatory"
+ACCOUNT_EMAIL_VERIFICATION_BY_CODE_ENABLED = True
+ACCOUNT_EMAIL_VERIFICATION_BY_CODE_MAX_ATTEMPTS = 3
+ACCOUNT_CONFIRM_EMAIL_ON_GET = False  # GET で確認を完了させない（メールの先読み対策）
+
+# --- メールワンタイムコードでのログイン ---
+# パスワードを覚えていなくても、メールに届く数字でログインできる。
+ACCOUNT_LOGIN_BY_CODE_ENABLED = True
+ACCOUNT_LOGIN_BY_CODE_TIMEOUT = 180          # 有効期限（秒）
+ACCOUNT_LOGIN_BY_CODE_MAX_ATTEMPTS = 3       # 入力の試行回数
+ACCOUNT_LOGIN_BY_CODE_MAX_RESEND_COUNT = 3   # 再送の上限
+
+# コードの形式。allauth の既定は "BCDF-GHJK" のような英字8桁。
+# ここでは数字6桁にする。スマートフォンで入力しやすく、
+# メールからの読み取りミスも減るため。
+#
+# 数字6桁は 100 万通りしかないので、単体では弱い。
+# 次の3つを組み合わせて初めて実用に耐える。
+#   1. 有効期限 180 秒（上の TIMEOUT）
+#   2. 試行3回で無効化（上の MAX_ATTEMPTS）
+#   3. 発行そのものを 5分に3回まで（下の RATE_LIMITS）
+# どれか1つでも外すと総当たりが成立するので、一緒に扱う。
+ACCOUNT_LOGIN_BY_CODE_FORMAT = {"numeric": True, "length": 6, "dashed": False}
+ACCOUNT_EMAIL_VERIFICATION_BY_CODE_FORMAT = {
+    "numeric": True,
+    "length": 6,
+    "dashed": False,
+}
+
+# アカウントの存在を漏らさない。
+# 「このメールアドレスは登録されていません」と返すと、
+# 総当たりで会員かどうかを調べられる。
+ACCOUNT_PREVENT_ENUMERATION = True
+ACCOUNT_EMAIL_UNKNOWN_ACCOUNTS = False  # 未登録アドレスへ「登録がありません」メールを送らない
+
+# パスワード変更後は他端末のセッションを切る。
+ACCOUNT_LOGOUT_ON_PASSWORD_CHANGE = True
+# ログアウトは POST のみ（GET を許すと強制ログアウトさせられる）。
+ACCOUNT_LOGOUT_ON_GET = False
+
+# 重要な操作の前に、もう一度本人確認を求める。
+ACCOUNT_REAUTHENTICATION_REQUIRED = True
+ACCOUNT_REAUTHENTICATION_TIMEOUT = 300  # 秒
+
+ACCOUNT_SESSION_REMEMBER = None  # 「ログイン状態を保持する」を利用者に選ばせる
+ACCOUNT_EMAIL_SUBJECT_PREFIX = "[KururuCMS] "
+
+# --- レート制限 ---
+# 総当たりとメール爆撃を止める。単位は "回/期間"。
+# 本番では共有キャッシュ（Redis）が必要。
+# ローカルメモリキャッシュだと、Gunicorn のワーカー数だけ制限が緩くなる。
+ACCOUNT_RATE_LIMITS = {
+    "login": "5/5m",                  # IP ごとのログイン試行
+    "login_failed": "5/5m/ip,3/5m/key",  # 失敗回数（アカウント単位も含む）
+    "signup": "5/h/ip",
+    "send_email": "10/h",
+    "change_email": "3/h",
+    "manage_email": "10/m/user",
+    "reset_password": "5/h/ip,3/h/key",
+    "reset_password_from_key": "10/m/ip",
+    "confirm_email": "5/m/key",
+    "request_login_code": "3/5m/key",  # ワンタイムコードの発行
+}
+
+# セッション一覧（どの端末からログインしているか）
+USERSESSIONS_TRACK_ACTIVITY = True
+
+# ソーシャルログイン。
+# 認証情報は環境変数から読む。settings.py に直接書かない。
+SOCIALACCOUNT_PROVIDERS = {
+    "google": {
+        "APP": {
+            "client_id": os.environ.get("GOOGLE_CLIENT_ID", ""),
+            "secret": os.environ.get("GOOGLE_CLIENT_SECRET", ""),
+            "key": "",
+        },
+        "SCOPE": ["profile", "email"],
+        "AUTH_PARAMS": {"access_type": "online"},
+    },
+    "github": {
+        "APP": {
+            "client_id": os.environ.get("GITHUB_CLIENT_ID", ""),
+            "secret": os.environ.get("GITHUB_CLIENT_SECRET", ""),
+            "key": "",
+        },
+        "SCOPE": ["user:email"],
+    },
+}
+# ソーシャル側で確認済みのメールアドレスは、こちらで再確認しない。
+SOCIALACCOUNT_EMAIL_AUTHENTICATION = False
+# 既存アカウントへ自動で紐づけない。
+# 自動で繋ぐと、攻撃者が同じメールアドレスのソーシャルアカウントを用意するだけで
+# 既存アカウントを乗っ取れる可能性がある。
+SOCIALACCOUNT_AUTO_SIGNUP = False
 
 # ---------------------------------------------------------------------------
 # 国際化

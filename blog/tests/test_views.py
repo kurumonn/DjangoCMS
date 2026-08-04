@@ -193,7 +193,7 @@ class ArticleCreateViewTests(TestCase):
     def test_anonymous_is_redirected_to_login(self):
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, 302)
-        self.assertIn(reverse("login"), response.url)
+        self.assertIn(reverse("account_login"), response.url)
 
     def test_user_without_permission_gets_403(self):
         create_user(username="nopower")

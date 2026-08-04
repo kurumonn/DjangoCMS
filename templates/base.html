@@ -78,12 +78,12 @@
           {% if user.is_staff %}<a href="{% url 'admin:index' %}">管理</a>{% endif %}
           {# ログアウトは POST のみ受け付ける（Django 5 の既定）。      #}
           {# GET で許すと、外部サイトの img タグだけで強制ログアウトできてしまう。 #}
-          <form method="post" action="{% url 'logout' %}" class="inline-form">
+          <form method="post" action="{% url 'account_logout' %}" class="inline-form">
             {% csrf_token %}
             <button type="submit" class="btn btn--link">ログアウト</button>
           </form>
         {% else %}
-          <a href="{% url 'login' %}">ログイン</a>
+          <a href="{% url 'account_login' %}">ログイン</a>
         {% endif %}
       </nav>
     </div>

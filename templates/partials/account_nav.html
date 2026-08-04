@@ -1,0 +1,28 @@
+{% comment %}
+アカウント設定のナビゲーション。
+
+allauth が提供する URL は、その機能を INSTALLED_APPS へ入れたときだけ存在する。
+url タグを直接書くと、機能を外した瞬間に NoReverseMatch で全画面が落ちる。
+`as 変数` の形にすると、URL が無いときは空文字になり、落ちない。
+
+複数行コメントは comment タグを使う。
+1行コメントの記法を複数行に使うと、中に書いたタグが本物として解釈される。
+{% endcomment %}
+<nav class="account-nav" aria-label="アカウント設定">
+  <ul>
+    {% url 'account_email' as email_url %}
+    {% if email_url %}<li><a href="{{ email_url }}">メールアドレス</a></li>{% endif %}
+
+    {% url 'account_change_password' as password_url %}
+    {% if password_url %}<li><a href="{{ password_url }}">パスワード</a></li>{% endif %}
+
+    {% url 'socialaccount_connections' as social_url %}
+    {% if social_url %}<li><a href="{{ social_url }}">外部アカウント連携</a></li>{% endif %}
+
+    {% url 'mfa_index' as mfa_url %}
+    {% if mfa_url %}<li><a href="{{ mfa_url }}">多要素認証</a></li>{% endif %}
+
+    {% url 'usersessions_list' as sessions_url %}
+    {% if sessions_url %}<li><a href="{{ sessions_url }}">ログイン中の端末</a></li>{% endif %}
+  </ul>
+</nav>
