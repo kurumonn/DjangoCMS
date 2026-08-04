@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+
+{% block title %}ダッシュボード | {{ site_setting.site_name }}{% endblock %}
+
+{% block content %}
+  <h1>ダッシュボード</h1>
+
+  <section class="stat-row">
+    <div class="stat">
+      <span class="stat__value">{{ counts.published }}</span>
+      <span class="stat__label">公開中</span>
+    </div>
+    <div class="stat">
+      <span class="stat__value">{{ counts.scheduled }}</span>
+      <span class="stat__label">予約投稿</span>
+    </div>
+    <div class="stat">
+      <span class="stat__value">{{ counts.review }}</span>
+      <span class="stat__label">レビュー待ち</span>
+    </div>
+    <div class="stat">
+      <span class="stat__value">{{ counts.draft }}</span>
+      <span class="stat__label">下書き</span>
+    </div>
+    <div class="stat">
+      <span class="stat__value">{{ pending_comment_count }}</span>
+      <span class="stat__label">未承認コメント</span>
+    </div>
+  </section>
+
+  <section>
+    <h2>{% if can_review %}レビュー待ち{% else %}レビュー依頼中の自分の記事{% endif %}</h2>
+    {% if review_queue %}
+      <ul class="article-list">
+        {% for article in review_queue %}
+          <li class="article-card">
+            <h3 class="article-card__title">
+              <a href="{{ article.get_absolute_url }}">{{ article.title }}</a>
+            </h3>
+            <p class="article-card__meta">
+              {{ article.author.byline }}・{{ article.updated_at|date:"Y-m-d H:i" }} 更新
+            </p>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="empty">レビュー待ちの記事はありません。</p>
+    {% endif %}
+  </section>
+
+  <section>
+    <h2>予約投稿</h2>
+    {% if scheduled_articles %}
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th scope="col">公開予定</th><th scope="col">タイトル</th><th scope="col">著者</th></tr>
+          </thead>
+          <tbody>
+            {% for article in scheduled_articles %}
+              <tr>
+                <td><time datetime="{{ article.published_at|date:'c' }}">{{ article.published_at|date:"Y-m-d H:i" }}</time></td>
+                <td><a href="{{ article.get_absolute_url }}">{{ article.title }}</a></td>
+                <td>{{ article.author.byline }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p class="empty">予約投稿はありません。</p>
+    {% endif %}
+  </section>
+
+  <section>
+    <h2>自分の下書き</h2>
+    {% if my_drafts %}
+      <ul class="article-list">
+        {% for article in my_drafts %}
+          <li class="article-card">
+            <h3 class="article-card__title">
+              <a href="{% url 'blog:article_update' article.slug %}">{{ article.title }}</a>
+            </h3>
+            <p class="article-card__meta">{{ article.updated_at|date:"Y-m-d H:i" }} 更新</p>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="empty">下書きはありません。</p>
+    {% endif %}
+  </section>
+
+  {% if pending_comments is not None %}
+    <section>
+      <h2>未承認コメント</h2>
+      {% if pending_comments %}
+        <ul class="article-list">
+          {% for comment in pending_comments %}
+            <li class="article-card">
+              <p class="article-card__meta">
+                {{ comment.display_name }}・{{ comment.created_at|date:"Y-m-d H:i" }}
+                ・<a href="{{ comment.article.get_absolute_url }}">{{ comment.article.title }}</a>
+              </p>
+              <p>{{ comment.body|truncatechars:120 }}</p>
+            </li>
+          {% endfor %}
+        </ul>
+        <p class="action-row">
+          <a class="btn" href="{% url 'admin:comments_comment_changelist' %}?is_approved__exact=0">
+            管理画面で承認する
+          </a>
+        </p>
+      {% else %}
+        <p class="empty">未承認のコメントはありません。</p>
+      {% endif %}
+    </section>
+  {% endif %}
+
+  {% if recent_logs %}
+    <section>
+      <h2>最近の操作</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">日時</th><th scope="col">操作者</th>
+              <th scope="col">操作</th><th scope="col">対象</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for log in recent_logs %}
+              <tr>
+                <td>{{ log.created_at|date:"m-d H:i" }}</td>
+                <td>{{ log.actor_label }}</td>
+                <td>{{ log.get_action_display }}</td>
+                <td>{{ log.target_repr }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  {% endif %}
+{% endblock %}

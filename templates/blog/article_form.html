@@ -1,6 +1,12 @@
 {% extends "base.html" %}
+{% load static %}
 
-{% block title %}{{ form_title }} | KururuCMS{% endblock %}
+{% block title %}{{ form_title }} | {{ site_setting.site_name }}{% endblock %}
+
+{% block head_extra %}
+  {# 編集画面は検索結果に出す必要がない。 #}
+  <meta name="robots" content="noindex, nofollow">
+{% endblock %}
 
 {% block content %}
   <h1>{{ form_title }}</h1>
@@ -18,19 +24,69 @@
     {% endif %}
 
     {% for field in form %}
-      <div class="field">
-        <label for="{{ field.id_for_label }}">
-          {{ field.label }}{% if field.field.required %} <span class="required">*</span>{% endif %}
-        </label>
-        {{ field }}
-        {% if field.help_text %}<p class="help">{{ field.help_text }}</p>{% endif %}
-        {% for error in field.errors %}<p class="error">{{ error }}</p>{% endfor %}
-      </div>
+      {% if field.name == "blocks" %}
+        {# ブロックは専用エディターで編集する。生の JSON は隠す。 #}
+        <div class="field">
+          <label for="{{ field.id_for_label }}">本文（ブロック）</label>
+          {{ field }}
+          {% for error in field.errors %}<p class="error">{{ error }}</p>{% endfor %}
+
+          <div class="editor" id="block-editor"
+               {% if object.pk %}
+                 data-autosave-url="{% url 'dashboard:autosave' object.pk %}"
+                 data-version="{{ object.version }}"
+               {% endif %}>
+            <div class="editor__toolbar">
+              <button type="button" class="btn" data-add-block="heading">見出し</button>
+              <button type="button" class="btn" data-add-block="paragraph">段落</button>
+              <button type="button" class="btn" data-add-block="image">画像</button>
+              <button type="button" class="btn" data-add-block="code">コード</button>
+              <button type="button" class="btn" data-add-block="quote">引用</button>
+              <button type="button" class="btn" data-add-block="note">注意書き</button>
+              <button type="button" class="btn" data-add-block="cta">行動喚起</button>
+            </div>
+            <div class="editor__blocks"></div>
+            <p class="editor__status" role="status" aria-live="polite"></p>
+          </div>
+        </div>
+      {% elif field.name == "body" %}
+        {# ブロックを使う記事では body は自動生成されるので隠す。      #}
+        {# ブロック化前の記事を編集するときだけ、そのまま編集させる。 #}
+        {% if not object.uses_blocks %}
+          <div class="field">
+            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            <p class="help">
+              ブロックを1つでも追加すると、この欄はブロックから自動生成されます。
+            </p>
+            {% for error in field.errors %}<p class="error">{{ error }}</p>{% endfor %}
+          </div>
+        {% endif %}
+      {% else %}
+        <div class="field">
+          <label for="{{ field.id_for_label }}">
+            {{ field.label }}{% if field.field.required %} <span class="required">*</span>{% endif %}
+          </label>
+          {{ field }}
+          {% if field.help_text %}<p class="help">{{ field.help_text }}</p>{% endif %}
+          {% for error in field.errors %}<p class="error">{{ error }}</p>{% endfor %}
+        </div>
+      {% endif %}
     {% endfor %}
 
     <p class="action-row">
       <button type="submit" class="btn btn--primary">保存</button>
       <a class="btn" href="{% url 'blog:article_list' %}">キャンセル</a>
+      {% if revision_count %}
+        <a class="btn" href="{% url 'blog:article_revisions' object.slug %}">
+          履歴（{{ revision_count }}件）
+        </a>
+      {% endif %}
     </p>
   </form>
+{% endblock %}
+
+{% block body_extra %}
+  {# defer を付けて、HTML の解析をブロックしないようにする。 #}
+  <script src="{% static 'js/block-editor.js' %}" defer></script>
 {% endblock %}

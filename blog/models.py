@@ -14,6 +14,7 @@ from django.db import models
 from django.urls import reverse
 from django.utils import timezone
 
+from .blocks import blocks_to_plain_text, validate_blocks
 from .utils import unique_slugify
 
 
@@ -128,7 +129,25 @@ class Article(models.Model):
         blank=True,
         help_text="URL に使う識別子。空なら自動生成する。",
     )
-    body = models.TextField("本文")
+    body = models.TextField(
+        "本文",
+        blank=True,
+        default="",
+        help_text=(
+            "ブロックエディターを使う場合は自動で埋まる。"
+            "検索と抜粋はこの欄を対象にする。"
+        ),
+    )
+    # 7日目に追加。本文をブロックの配列として持つ。
+    # body を消さずに残しているのは、
+    #   1. 過去記事（ブロック化前）をそのまま表示し続けるため
+    #   2. 検索・抜粋・RSS が JSON を読まずに済むようにするため
+    blocks = models.JSONField(
+        "本文ブロック",
+        default=list,
+        blank=True,
+        validators=[validate_blocks],
+    )
 
     author = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -177,6 +196,16 @@ class Article(models.Model):
 
     created_at = models.DateTimeField("作成日時", auto_now_add=True)
     updated_at = models.DateTimeField("更新日時", auto_now=True)
+
+    # 保存のたびに1つ増える。同時編集の検出（楽観ロック）に使う。
+    #
+    # updated_at で代用しないのは、時刻の比較が思ったより当てにならないため。
+    #   * MySQL は既定でマイクロ秒を切り捨てる
+    #   * JSON とテンプレートを往復する間に精度が落ちることがある
+    #   * 丸め差を吸収しようと「1秒の許容」を入れると、
+    #     同じ秒に起きた同時編集を素通ししてしまう
+    # 整数の比較なら、こうした曖昧さが一切ない。
+    version = models.PositiveIntegerField("版番号", default=0, editable=False)
 
     # --- SEO（6日目に追加）---------------------------------------------
     # 記事タイトルと検索結果のタイトルは、目的が違うので分けられるようにする。
@@ -232,7 +261,37 @@ class Article(models.Model):
     def save(self, *args, **kwargs):
         if not self.slug:
             self.slug = unique_slugify(Article, self.title, instance=self)
+
+        # ブロックを使っている記事は、body を平文の写しとして保つ。
+        # こうしておくと、検索・抜粋・RSS が JSON を解釈しなくて済む。
+        # 「JSON をそのまま LIKE 検索する」実装にすると、
+        # "heading" や "media_id" といったキー名にヒットしてしまう。
+        if self.blocks:
+            mirrored = blocks_to_plain_text(self.blocks)
+            if mirrored != self.body:
+                self.body = mirrored
+                self._add_update_field(kwargs, "body")
+
+        # 保存のたびに版番号を進める。
+        self.version = (self.version or 0) + 1
+        self._add_update_field(kwargs, "version")
+
         super().save(*args, **kwargs)
+
+    @staticmethod
+    def _add_update_field(kwargs: dict, name: str) -> None:
+        """update_fields を指定した保存でも、内部で変えた列を書き戻す。
+
+        update_fields に入れ忘れると、値がメモリ上だけ変わって
+        データベースへ反映されない。原因が非常に見えにくい不具合になる。
+        """
+        update_fields = kwargs.get("update_fields")
+        if update_fields is not None and name not in update_fields:
+            kwargs["update_fields"] = list(update_fields) + [name]
+
+    @property
+    def uses_blocks(self) -> bool:
+        return bool(self.blocks)
 
     def get_absolute_url(self) -> str:
         return reverse("blog:article_detail", kwargs={"slug": self.slug})
@@ -312,11 +371,36 @@ class Article(models.Model):
             article=self,
             title=self.title,
             body=self.body,
+            blocks=self.blocks,
             status=self.status,
             published_at=self.published_at,
             created_by=created_by,
             note=note,
         )
+
+
+class ReusableBlock(models.Model):
+    """複数の記事から使い回すブロックのかたまり。
+
+    「お知らせ」「免責事項」「著者プロフィール」など、
+    全記事へ同じ内容を貼り付けたくなるものをここへ置く。
+    貼り付けで済ませると、文言を直すときに全記事を編集することになる。
+    """
+
+    name = models.CharField("名前", max_length=100, unique=True)
+    description = models.CharField("説明", max_length=200, blank=True, default="")
+    blocks = models.JSONField("ブロック", default=list, validators=[validate_blocks])
+
+    created_at = models.DateTimeField("作成日時", auto_now_add=True)
+    updated_at = models.DateTimeField("更新日時", auto_now=True)
+
+    class Meta:
+        verbose_name = "再利用ブロック"
+        verbose_name_plural = "再利用ブロック"
+        ordering = ["name"]
+
+    def __str__(self) -> str:
+        return self.name
 
 
 class ArticleRevision(models.Model):
@@ -334,7 +418,8 @@ class ArticleRevision(models.Model):
         verbose_name="記事",
     )
     title = models.CharField("タイトル", max_length=200)
-    body = models.TextField("本文")
+    body = models.TextField("本文", blank=True, default="")
+    blocks = models.JSONField("本文ブロック", default=list, blank=True)
     status = models.CharField("公開状態", max_length=20)
     published_at = models.DateTimeField("公開日時", null=True, blank=True)
 
@@ -367,8 +452,9 @@ class ArticleRevision(models.Model):
 
         article.title = self.title
         article.body = self.body
+        article.blocks = self.blocks
         # status と published_at は戻さない。
         # 「公開中の記事の本文だけを古い版に戻す」が実務では最も多く、
         # 復元操作が同時に公開状態まで変えると事故になる。
-        article.save(update_fields=["title", "body", "updated_at"])
+        article.save(update_fields=["title", "body", "blocks", "updated_at"])
         return article

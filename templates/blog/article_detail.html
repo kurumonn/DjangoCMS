@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load seo_tags %}
+{% load seo_tags block_tags %}
 
 {% block title %}{{ article.display_seo_title }} | {{ site_setting.site_name }}{% endblock %}
 {% block meta_description %}{{ article.display_seo_description }}{% endblock %}
@@ -81,9 +81,19 @@
       </figure>
     {% endif %}
 
-    {# linebreaks は HTML をエスケープしたうえで改行を <p>/<br> に変換する。 #}
-    {# ここで |safe を使うと投稿者が自由に <script> を仕込めるようになる。 #}
-    <div class="article__body">{{ article.body|linebreaks }}</div>
+    <div class="article__body">
+      {% if article.uses_blocks %}
+        {# ブロックは種類ごとのテンプレートで描画する。          #}
+        {# 出力する HTML はすべてこちらのテンプレートにあるので、 #}
+        {# 投稿内容がタグとして解釈されることがない。            #}
+        {% render_blocks article.blocks %}
+      {% else %}
+        {# ブロック化する前の記事。                                        #}
+        {# linebreaks は HTML をエスケープしたうえで改行を <p>/<br> に変換する。 #}
+        {# ここで |safe を使うと投稿者が自由に <script> を仕込めるようになる。   #}
+        {{ article.body|linebreaks }}
+      {% endif %}
+    </div>
   </article>
 
   {% if can_edit or can_review %}

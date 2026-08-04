@@ -1,0 +1,10 @@
+{% if articles %}
+  <aside class="block-related">
+    <h2>あわせて読みたい</h2>
+    <ul class="widget__list">
+      {% for article in articles %}
+        <li><a href="{{ article.get_absolute_url }}">{{ article.title }}</a></li>
+      {% endfor %}
+    </ul>
+  </aside>
+{% endif %}

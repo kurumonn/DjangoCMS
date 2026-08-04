@@ -15,6 +15,7 @@ urlpatterns = [
     # ログイン・ログアウト・パスワード変更。
     # 8日目に django-allauth へ置き換える。
     path("accounts/", include("django.contrib.auth.urls")),
+    path("dashboard/", include("dashboard.urls")),
     path("pages/", include("pages.urls")),
     # sitemap.xml / feed / robots.txt はサイト直下に置く。
     path("", include("seo.urls")),

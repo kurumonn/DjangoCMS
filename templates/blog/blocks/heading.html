@@ -1,0 +1,4 @@
+{# 見出し。level は 2〜4 に検証済み。 #}
+{% if data.level == 2 %}<h2 class="block-heading">{{ data.text }}</h2>
+{% elif data.level == 3 %}<h3 class="block-heading">{{ data.text }}</h3>
+{% else %}<h4 class="block-heading">{{ data.text }}</h4>{% endif %}

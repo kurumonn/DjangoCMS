@@ -57,6 +57,7 @@ INSTALLED_APPS = [
     "media_library",
     "comments",
     "seo",
+    "dashboard",
 ]
 
 MIDDLEWARE = [

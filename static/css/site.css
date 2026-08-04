@@ -333,6 +333,117 @@ main { min-width: 0; }
 .featured-image { margin: 1.5rem 0 0; }
 .featured-image img { border-radius: var(--radius); display: block; }
 
+/* ダッシュボードの集計 */
+.stat-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr));
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+.stat {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  padding: 0.9rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+.stat__value { font-size: 1.6rem; font-weight: 700; line-height: 1.1; }
+.stat__label { color: var(--muted); font-size: 0.85rem; }
+
+/* ブロック */
+.block-heading { margin-top: 2rem; }
+.block-paragraph p:last-child { margin-bottom: 0; }
+.block-image { margin: 1.5rem 0; }
+.block-image img { border-radius: var(--radius); display: block; }
+.block-image figcaption { color: var(--muted); font-size: 0.85rem; margin-top: 0.4rem; }
+.block-quote {
+  margin: 1.5rem 0;
+  padding-left: 1rem;
+  border-left: 3px solid var(--border);
+}
+.block-quote blockquote { margin: 0; }
+.block-quote figcaption { color: var(--muted); font-size: 0.9rem; }
+.block-note {
+  margin: 1.5rem 0;
+  padding: 0.9rem 1.1rem;
+  border: 1px solid var(--border);
+  border-left-width: 4px;
+  border-radius: var(--radius);
+  background: var(--surface);
+  max-width: none;
+}
+.block-note--warning { border-left-color: #d97706; }
+.block-note--danger { border-left-color: var(--danger); }
+.block-note p:last-child { margin-bottom: 0; }
+.block-cta { margin: 1.5rem 0; }
+.block-table { margin: 1.5rem 0; }
+.block-related {
+  margin: 2rem 0;
+  padding: 1rem 1.2rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.block-related h2 { margin-top: 0; font-size: 1rem; }
+
+/* ブロックエディター */
+.editor { margin-top: 1rem; }
+.editor__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  padding: 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius) var(--radius) 0 0;
+  background: var(--surface);
+}
+.editor__blocks {
+  border: 1px solid var(--border);
+  border-top: 0;
+  border-radius: 0 0 var(--radius) var(--radius);
+  padding: 0.75rem;
+  min-height: 8rem;
+}
+.editor-block {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.6rem 0.75rem;
+  margin-bottom: 0.6rem;
+  background: var(--bg);
+}
+.editor-block__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.4rem;
+}
+.editor-block__type { font-size: 0.8rem; color: var(--muted); font-weight: 600; }
+.editor-block__actions { display: flex; gap: 0.25rem; }
+.editor-block textarea,
+.editor-block input[type="text"],
+.editor-block input[type="number"],
+.editor-block select {
+  width: 100%;
+  padding: 0.4rem 0.55rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--fg);
+  font: inherit;
+}
+.editor-block textarea { min-height: 5rem; resize: vertical; }
+.editor__status {
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+  min-height: 1.5em;
+}
+.editor__status--error { color: var(--danger); }
+.editor__status--saved { color: var(--success); }
+
 /* 編集者向け操作バー */
 .editor-bar {
   margin-top: 2rem;

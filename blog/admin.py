@@ -1,6 +1,12 @@
 from django.contrib import admin
 
-from .models import Article, ArticleRevision, Category, Tag
+from .models import Article, ArticleRevision, Category, ReusableBlock, Tag
+
+
+@admin.register(ReusableBlock)
+class ReusableBlockAdmin(admin.ModelAdmin):
+    list_display = ("name", "description", "updated_at")
+    search_fields = ("name", "description")
 
 
 @admin.register(Category)
@@ -34,7 +40,7 @@ class ArticleAdmin(admin.ModelAdmin):
     prepopulated_fields = {"slug": ("title",)}
 
     fieldsets = (
-        (None, {"fields": ("title", "slug", "body")}),
+        (None, {"fields": ("title", "slug", "body", "blocks")}),
         ("分類", {"fields": ("category", "tags")}),
         ("メディア", {"fields": ("featured_image",)}),
         ("公開", {"fields": ("status", "published_at", "author")}),

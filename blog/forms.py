@@ -28,6 +28,7 @@ class ArticleForm(forms.ModelForm):
         fields = [
             "title",
             "body",
+            "blocks",
             "category",
             "tags",
             "featured_image",
@@ -42,6 +43,10 @@ class ArticleForm(forms.ModelForm):
         ]
         widgets = {
             "body": forms.Textarea(attrs={"rows": 18}),
+            # ブロックはエディターが JSON を書き込むので、素の欄は隠す。
+            # JavaScript が無効な環境でも JSON を直接編集できるよう、
+            # 消すのではなく hidden にしておく。
+            "blocks": forms.HiddenInput(),
             "published_at": forms.DateTimeInput(
                 attrs={"type": "datetime-local"}, format="%Y-%m-%dT%H:%M"
             ),
@@ -58,6 +63,9 @@ class ArticleForm(forms.ModelForm):
             "%Y-%m-%d %H:%M:%S",
         ]
         self.fields["tags"].required = False
+        # ブロックは空（ブロックを使わない記事）でもよい。
+        self.fields["blocks"].required = False
+        self.fields["body"].required = False
 
         self.fields["status"].choices = self._allowed_status_choices()
         if not self.can_publish:
@@ -97,6 +105,11 @@ class ArticleForm(forms.ModelForm):
         # 「公開したはずなのに一覧に出ない」という分かりにくい状態になる。
         if status == Article.Status.PUBLISHED and not published_at:
             cleaned["published_at"] = timezone.now()
+
+        # 本文がまったく無い記事は保存させない。
+        # body とブロックの両方が空だと、タイトルだけの記事が公開できてしまう。
+        if not cleaned.get("body") and not cleaned.get("blocks"):
+            self.add_error("body", "本文かブロックのどちらかを入力してください。")
 
         return cleaned
 

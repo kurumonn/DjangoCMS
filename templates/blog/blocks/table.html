@@ -1,0 +1,14 @@
+<div class="table-wrap block-table">
+  <table>
+    {% for row in data.rows %}
+      {% if forloop.first and data.has_header %}
+        <thead><tr>{% for cell in row %}<th scope="col">{{ cell }}</th>{% endfor %}</tr></thead>
+        <tbody>
+      {% else %}
+        {% if forloop.first %}<tbody>{% endif %}
+        <tr>{% for cell in row %}<td>{{ cell }}</td>{% endfor %}</tr>
+      {% endif %}
+    {% endfor %}
+    </tbody>
+  </table>
+</div>

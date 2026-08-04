@@ -1,0 +1,9 @@
+{% if media %}
+  <figure class="block-image">
+    <img src="{{ media.file.url }}"
+         alt="{{ data.alt|default:media.display_alt }}"
+         width="{{ media.width }}" height="{{ media.height }}"
+         loading="lazy" decoding="async">
+    {% if data.caption %}<figcaption>{{ data.caption }}</figcaption>{% endif %}
+  </figure>
+{% endif %}

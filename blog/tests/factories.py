@@ -61,7 +61,12 @@ def create_staff(username="editor", **kwargs):
 
 
 def create_editor(username="reviewer", **kwargs):
-    """編集者（承認と公開ができる）。"""
+    """編集者（承認・公開・コメント管理ができる）。
+
+    setup_groups コマンドの「編集者」ロールと同じ権限をそろえる。
+    ここがずれていると、テストは通るのに実運用のグループでは
+    権限が足りない、という食い違いが起きる。
+    """
     user = create_user(username=username, **kwargs)
     return grant(
         user,
@@ -70,6 +75,9 @@ def create_editor(username="reviewer", **kwargs):
         "blog.delete_article",
         "blog.publish_article",
         "blog.review_article",
+        "comments.change_comment",
+        "comments.delete_comment",
+        "comments.view_comment",
     )
 
 
