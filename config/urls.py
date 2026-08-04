@@ -12,6 +12,10 @@ urlpatterns = [
     # 管理画面のパスは環境変数で変更できるようにしておく。
     # 既定の /admin/ は総当たり攻撃の標的になりやすい。
     path(f"{settings.ADMIN_URL_PATH}/", admin.site.urls),
+    # ログイン・ログアウト・パスワード変更。
+    # 8日目に django-allauth へ置き換える。
+    path("accounts/", include("django.contrib.auth.urls")),
+    path("pages/", include("pages.urls")),
     path("", include("blog.urls")),
 ]
 

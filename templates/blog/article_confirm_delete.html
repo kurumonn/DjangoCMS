@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block title %}記事を削除 | KururuCMS{% endblock %}
+
+{% block content %}
+  <h1>記事を削除しますか？</h1>
+  <p>「{{ object.title }}」を削除します。この操作は取り消せません。</p>
+
+  {# 削除は必ず POST で行う。GET で削除できるようにすると、       #}
+  {# クローラーや先読みがリンクをたどるだけで記事が消える。       #}
+  <form method="post" class="form">
+    {% csrf_token %}
+    <p class="action-row">
+      <button type="submit" class="btn btn--danger">削除する</button>
+      <a class="btn" href="{{ object.get_absolute_url }}">キャンセル</a>
+    </p>
+  </form>
+{% endblock %}

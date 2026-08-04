@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block title %}{% if heading %}{{ heading }} | {% endif %}KururuCMS{% endblock %}
+
+{% block content %}
+  <h1>{{ heading|default:"記事一覧" }}</h1>
+
+  {% if articles %}
+    <ul class="article-list">
+      {% for article in articles %}
+        <li class="article-card">
+          <h2 class="article-card__title">
+            <a href="{{ article.get_absolute_url }}">{{ article.title }}</a>
+          </h2>
+          <p class="article-card__meta">
+            <time datetime="{{ article.published_at|date:'c' }}">
+              {{ article.published_at|date:"Y年n月j日" }}
+            </time>
+            ・<a href="{{ article.category.get_absolute_url }}">{{ article.category.name }}</a>
+            ・{{ article.author.byline }}
+          </p>
+          {% if article.tags.all %}
+            <p class="tag-row">
+              {% for tag in article.tags.all %}
+                <a class="tag" href="{{ tag.get_absolute_url }}">#{{ tag.name }}</a>
+              {% endfor %}
+            </p>
+          {% endif %}
+        </li>
+      {% endfor %}
+    </ul>
+
+    {% if is_paginated %}
+      <nav class="pagination" aria-label="ページ送り">
+        {% if page_obj.has_previous %}
+          <a href="?page={{ page_obj.previous_page_number }}">前へ</a>
+        {% endif %}
+        <span>{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+        {% if page_obj.has_next %}
+          <a href="?page={{ page_obj.next_page_number }}">次へ</a>
+        {% endif %}
+      </nav>
+    {% endif %}
+  {% else %}
+    {# 記事が0件でもエラーにならず、空であることが分かる表示にする。 #}
+    <p class="empty">まだ公開された記事がありません。</p>
+  {% endif %}
+{% endblock %}

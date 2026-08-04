@@ -33,12 +33,6 @@ class ArticleAdmin(admin.ModelAdmin):
     # スラッグは save() で自動生成されるが、管理画面では手入力もできるようにする。
     prepopulated_fields = {"slug": ("title",)}
 
-    # 2日目時点では記事詳細ページの URL がまだ無い。
-    # get_absolute_url() は定義済みなので、放置すると管理画面の
-    # 「サイト上で表示」ボタンが NoReverseMatch で落ちる。
-    # 3日目に一覧・詳細ビューを作ったらこの行を削除する。
-    view_on_site = False
-
     fieldsets = (
         (None, {"fields": ("title", "slug", "body")}),
         ("分類", {"fields": ("category", "tags")}),

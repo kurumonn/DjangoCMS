@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}ログイン | KururuCMS{% endblock %}
+
+{% block content %}
+  <h1>ログイン</h1>
+
+  <form method="post" class="form form--narrow">
+    {% csrf_token %}
+
+    {% if form.errors %}
+      {# 「ユーザー名が存在しない」と「パスワードが違う」を区別して表示しない。 #}
+      {# 区別すると、どのアカウントが存在するかを総当たりで調べられる。        #}
+      <p class="message message--error">
+        ユーザー名またはパスワードが違います。
+      </p>
+    {% endif %}
+
+    {% for field in form %}
+      <div class="field">
+        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+      </div>
+    {% endfor %}
+
+    <p class="action-row">
+      <button type="submit" class="btn btn--primary">ログイン</button>
+    </p>
+  </form>
+{% endblock %}

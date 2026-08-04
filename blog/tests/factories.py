@@ -24,6 +24,42 @@ def create_user(username="author1", **kwargs):
     return user
 
 
+def grant(user, *codenames):
+    """``app_label.codename`` 形式で権限を付与する。
+
+    テストの中で「権限を持つ人／持たない人」を明示的に作り分けるために使う。
+    """
+    from django.contrib.auth.models import Permission
+
+    for dotted in codenames:
+        app_label, codename = dotted.split(".", 1)
+        user.user_permissions.add(
+            Permission.objects.get(
+                content_type__app_label=app_label, codename=codename
+            )
+        )
+    # 権限キャッシュを捨てて、追加した権限を即座に反映させる。
+    if hasattr(user, "_perm_cache"):
+        del user._perm_cache
+    return User.objects.get(pk=user.pk)
+
+
+def create_author(username="writer", **kwargs):
+    """記事を投稿・編集・削除できる一般ユーザー。"""
+    user = create_user(username=username, **kwargs)
+    return grant(
+        user, "blog.add_article", "blog.change_article", "blog.delete_article"
+    )
+
+
+def create_staff(username="editor", **kwargs):
+    """スタッフ（他人の記事も編集できる）。"""
+    user = create_user(username=username, is_staff=True, **kwargs)
+    return grant(
+        user, "blog.add_article", "blog.change_article", "blog.delete_article"
+    )
+
+
 def create_category(name="お知らせ", **kwargs):
     return Category.objects.create(name=name, **kwargs)
 

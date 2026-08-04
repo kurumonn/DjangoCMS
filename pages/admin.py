@@ -10,6 +10,3 @@ class PageAdmin(admin.ModelAdmin):
     search_fields = ("title", "body")
     prepopulated_fields = {"slug": ("title",)}
     date_hierarchy = "published_at"
-
-    # 記事と同じ理由で、3日目まで「サイト上で表示」を無効にしておく。
-    view_on_site = False
