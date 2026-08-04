@@ -18,15 +18,15 @@ git checkout day-05         # 5日目時点の状態で動かす
 
 | タグ | 記事 | 完成する機能 |
 | --- | --- | --- |
-| `day-01` | Django CMS 開発を始めよう | プロジェクトの土台・カスタムユーザー |
-| `day-02` | Django モデル入門 | 記事・カテゴリ・タグ・固定ページ |
-| `day-03` | Django CRUD 完全入門 | 投稿・編集・削除・権限 |
-| `day-04` | Django CMS を実用化 | 画像・コメント・サイト内検索 |
-| `day-05` | WordPress 級の記事管理 | 下書き・予約投稿・リビジョン |
-| `day-06` | Django CMS の SEO 対策 | OGP・構造化データ・RSS・サイトマップ |
-| `day-07` | Django で管理画面を自作 | ダッシュボード・ブロックエディター |
-| `day-08` | django-allauth 完全入門 | メール認証・ワンタイムコード |
-| `day-09` | Django でパスキー認証 | TOTP・WebAuthn・復旧手段 |
+| `day-01` | [Django CMS 開発を始めよう](docs/articles/day-01.md) | プロジェクトの土台・カスタムユーザー |
+| `day-02` | [Django モデル入門](docs/articles/day-02.md) | 記事・カテゴリ・タグ・固定ページ |
+| `day-03` | [Django CRUD 完全入門](docs/articles/day-03.md) | 投稿・編集・削除・権限 |
+| `day-04` | [Django CMS を実用化](docs/articles/day-04.md) | 画像・コメント・サイト内検索 |
+| `day-05` | [WordPress 級の記事管理](docs/articles/day-05.md) | 下書き・予約投稿・リビジョン |
+| `day-06` | [Django CMS の SEO 対策](docs/articles/day-06.md) | OGP・構造化データ・RSS・サイトマップ |
+| `day-07` | [Django で管理画面を自作](docs/articles/day-07.md) | ダッシュボード・ブロックエディター |
+| `day-08` | [django-allauth 完全入門](docs/articles/day-08.md) | メール認証・ワンタイムコード |
+| `day-09` | [Django でパスキー認証](docs/articles/day-09.md) | TOTP・WebAuthn・復旧手段 |
 | `day-10` | Django CMS 完成 | テスト・Docker・本番設定 |
 
 ### 第2部：本番へデプロイする
@@ -95,6 +95,35 @@ python manage.py runserver
 - 認証まわりはレート制限と監査ログを前提にする
 
 詳細は各日の記事、および `docs/` 配下を参照してください。
+
+## ドキュメント
+
+| 場所 | 内容 |
+| --- | --- |
+| [`docs/articles/`](docs/articles/) | 連載記事（13項目の統一構成） |
+| [`docs/errors/`](docs/errors/) | **実際に発生した**エラーの記録。記事の「よくあるエラー」はここから引用 |
+| [`docs/images/`](docs/images/) | 記事用スクリーンショット（`tools/capture_screenshots.py` で自動撮影） |
+
+`docs/errors/` には、想像で書いた「起きそうなエラー」は入れていません。
+開発中に手が止まった事実だけを、
+「症状 / 再現条件 / 原因 / 直し方 / 判断方法」の形式で記録しています。
+
+テストが全部通っている状態で見つかったバグも2件記録しています。
+
+- [6日目](docs/errors/day-06.md): サイトマップと canonical URL が別ドメインを指していた
+- [9日目](docs/errors/day-09.md): 編集者が他人の記事を編集できなかった
+
+どちらも、ブラウザーで画面を出して初めて気づいたものです。
+
+## スクリーンショットの撮り直し
+
+```bash
+python tools/capture_screenshots.py
+```
+
+開発サーバーを起動した状態で実行すると、`docs/images/` が更新されます。
+内容が同じ画像ができた場合は警告が出ます（リダイレクトで別のページを
+撮ってしまう事故の検出）。
 
 ## ライセンス
 
