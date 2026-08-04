@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "django.contrib.sitemaps",
     # 自作アプリ
     "core",
     "accounts",
@@ -55,6 +56,7 @@ INSTALLED_APPS = [
     "pages",
     "media_library",
     "comments",
+    "seo",
 ]
 
 MIDDLEWARE = [
@@ -79,6 +81,8 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "seo.context_processors.site_settings",
+                "seo.context_processors.sidebar",
             ],
         },
     },

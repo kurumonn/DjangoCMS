@@ -16,6 +16,8 @@ urlpatterns = [
     # 8日目に django-allauth へ置き換える。
     path("accounts/", include("django.contrib.auth.urls")),
     path("pages/", include("pages.urls")),
+    # sitemap.xml / feed / robots.txt はサイト直下に置く。
+    path("", include("seo.urls")),
     path("", include("comments.urls")),
     path("", include("blog.urls")),
 ]

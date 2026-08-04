@@ -178,6 +178,36 @@ class Article(models.Model):
     created_at = models.DateTimeField("作成日時", auto_now_add=True)
     updated_at = models.DateTimeField("更新日時", auto_now=True)
 
+    # --- SEO（6日目に追加）---------------------------------------------
+    # 記事タイトルと検索結果のタイトルは、目的が違うので分けられるようにする。
+    # 記事内では「ORMでN+1クエリを避ける」で十分でも、
+    # 検索結果では「Django ORMのN+1問題を解決する方法」の方がクリックされる。
+    seo_title = models.CharField(
+        "SEOタイトル", max_length=70, blank=True, default="",
+        help_text="空なら記事タイトルを使う。全角35文字程度が目安。",
+    )
+    seo_description = models.CharField(
+        "SEO説明文", max_length=160, blank=True, default="",
+        help_text="空なら本文の冒頭を使う。",
+    )
+    canonical_url = models.URLField(
+        "正規URL", blank=True, default="",
+        help_text="他サイトへ転載した記事など、正規のURLが別にある場合に指定する。",
+    )
+    noindex = models.BooleanField(
+        "検索エンジンから除外", default=False,
+        help_text="この記事だけを検索結果に出したくない場合に有効にする。",
+    )
+    og_image = models.ForeignKey(
+        "media_library.MediaAsset",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="og_articles",
+        verbose_name="OG画像",
+        help_text="空ならアイキャッチ画像、それも空ならサイト既定の画像を使う。",
+    )
+
     objects = ArticleQuerySet.as_manager()
 
     class Meta:
@@ -206,6 +236,27 @@ class Article(models.Model):
 
     def get_absolute_url(self) -> str:
         return reverse("blog:article_detail", kwargs={"slug": self.slug})
+
+    # --- SEO の導出値 ---------------------------------------------------
+    # テンプレート内で {% if %} を重ねるのではなく、
+    # 「最終的に何を出すか」をモデル側で決める。
+    # 出力箇所（詳細ページ・OGP・RSS・サイトマップ）が増えても矛盾しない。
+    @property
+    def display_seo_title(self) -> str:
+        return self.seo_title or self.title
+
+    @property
+    def display_seo_description(self) -> str:
+        if self.seo_description:
+            return self.seo_description
+        # 本文から作る。改行を潰し、160文字で切る。
+        flattened = " ".join(self.body.split())
+        return flattened[:157] + "…" if len(flattened) > 160 else flattened
+
+    @property
+    def display_og_image(self):
+        """OG画像 → アイキャッチ → なし、の順で解決する。"""
+        return self.og_image or self.featured_image
 
     def related_articles(self, limit: int = 4):
         """関連記事を返す。

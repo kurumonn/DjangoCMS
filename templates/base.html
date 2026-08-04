@@ -1,12 +1,55 @@
-{% load static %}<!DOCTYPE html>
+{% load static seo_tags %}<!DOCTYPE html>
 <html lang="ja">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}KururuCMS{% endblock %}</title>
+
+  <title>{% block title %}{{ site_setting.site_name }}{% endblock %}</title>
+
+  {# --- 基本の meta ------------------------------------------------- #}
+  <meta name="description" content="{% block meta_description %}{{ site_setting.description }}{% endblock %}">
+
+  {# robots.txt は「クロールするな」。検索結果から確実に外すのはこちら。 #}
+  {% if site_setting.noindex_site or noindex %}
+    <meta name="robots" content="noindex, nofollow">
+  {% endif %}
+
+  {% block canonical %}{% endblock %}
+
+  {# --- OGP / X カード ---------------------------------------------- #}
+  <meta property="og:site_name" content="{{ site_setting.site_name }}">
+  <meta property="og:locale" content="ja_JP">
+  <meta property="og:type" content="{% block og_type %}website{% endblock %}">
+  <meta property="og:title" content="{% block og_title %}{{ site_setting.site_name }}{% endblock %}">
+  <meta property="og:description" content="{% block og_description %}{{ site_setting.description }}{% endblock %}">
+  <meta property="og:url" content="{% absolute_url request.path %}">
+  {% block og_image %}
+    {% if site_setting.default_og_image %}
+      <meta property="og:image" content="{% absolute_url site_setting.default_og_image.file.url %}">
+    {% endif %}
+  {% endblock %}
+
+  <meta name="twitter:card" content="summary_large_image">
+  {% if site_setting.twitter_site %}
+    <meta name="twitter:site" content="{{ site_setting.twitter_site }}">
+  {% endif %}
+
+  {# --- フィード ------------------------------------------------------ #}
+  <link rel="alternate" type="application/rss+xml"
+        title="{{ site_setting.site_name }} の更新情報" href="{% url 'seo:feed' %}">
+
   {# 外部CDNを一切使わない。すべて自ホストから配信するため、  #}
   {# 10日目で導入する Content-Security-Policy が緩まずに済む。 #}
   <link rel="stylesheet" href="{% static 'css/site.css' %}">
+  {# サイト設定で決めたアクセント色だけを差し込む。            #}
+  {# 値は #rrggbb 形式に検証済みなので、CSS へ注入されない。    #}
+  <style>
+    :root { --accent: {{ site_setting.accent_color }}; }
+    @media (prefers-color-scheme: dark) {
+      :root { --accent: {{ site_setting.accent_color_dark }}; }
+    }
+  </style>
+
   {% block head_extra %}{% endblock %}
 </head>
 <body>
@@ -14,7 +57,12 @@
 
   <header class="site-header">
     <div class="container header-inner">
-      <a class="brand" href="{% url 'blog:article_list' %}">KururuCMS</a>
+      <div class="brand-block">
+        <a class="brand" href="{% url 'blog:article_list' %}">{{ site_setting.site_name }}</a>
+        {% if site_setting.tagline %}
+          <span class="tagline">{{ site_setting.tagline }}</span>
+        {% endif %}
+      </div>
       <nav class="site-nav" aria-label="グローバルナビゲーション">
         <form method="get" action="{% url 'blog:search' %}" class="nav-search" role="search">
           <label class="visually-hidden" for="nav-q">サイト内検索</label>
@@ -51,13 +99,24 @@
     </div>
   {% endif %}
 
-  <main id="main" class="container">
-    {% block content %}{% endblock %}
-  </main>
+  <div class="container layout{% if not sidebar %} layout--full{% endif %}">
+    <main id="main">
+      {% block breadcrumb %}{% endblock %}
+      {% block content %}{% endblock %}
+    </main>
+
+    {% if sidebar %}
+      {% include "partials/sidebar.html" %}
+    {% endif %}
+  </div>
 
   <footer class="site-footer">
-    <div class="container">
-      <p>&copy; {% now "Y" %} KururuCMS — 10日で作る Django CMS の成果物</p>
+    <div class="container footer-inner">
+      <p>&copy; {% now "Y" %} {{ site_setting.site_name }}</p>
+      <nav aria-label="フッターナビゲーション">
+        <a href="{% url 'seo:feed' %}">RSS</a>
+        <a href="{% url 'seo:sitemap' %}">サイトマップ</a>
+      </nav>
     </div>
   </footer>
 

@@ -1,5 +1,6 @@
 """4日目: サイト内検索のテスト。"""
 
+from django.core.cache import cache
 from django.test import TestCase
 from django.urls import reverse
 
@@ -8,8 +9,18 @@ from blog.models import Article
 from .factories import create_article, create_category
 
 
+def found_titles(response) -> set[str]:
+    """検索ビューが実際に返した記事のタイトル。
+
+    ページ全体の HTML を見ると、サイドバーの「最新記事」に載っている
+    タイトルまで拾ってしまい、「検索でヒットしたか」を判定できない。
+    """
+    return {article.title for article in response.context["articles"]}
+
+
 class SearchViewTests(TestCase):
     def setUp(self):
+        cache.clear()
         self.category = create_category()
         create_article(
             title="Djangoのマイグレーション入門",
@@ -31,24 +42,27 @@ class SearchViewTests(TestCase):
 
     def test_matches_title(self):
         response = self.client.get(self.url, {"q": "マイグレーション"})
-        self.assertContains(response, "Djangoのマイグレーション入門")
-        self.assertNotContains(response, "Nginxのリバースプロキシ")
+        titles = found_titles(response)
+        self.assertIn("Djangoのマイグレーション入門", titles)
+        self.assertNotIn("Nginxのリバースプロキシ", titles)
 
     def test_matches_body(self):
         response = self.client.get(self.url, {"q": "proxy_pass"})
-        self.assertContains(response, "Nginxのリバースプロキシ")
+        self.assertIn("Nginxのリバースプロキシ", found_titles(response))
 
     def test_draft_is_never_found(self):
         """検索は published() を通すので、下書きは絶対に出ない。"""
         response = self.client.get(self.url, {"q": "下書き"})
+        self.assertNotIn("下書きのDjango記事", found_titles(response))
+        # サイドバーなど、ページのどこにも出ない。
         self.assertNotContains(response, "下書きのDjango記事")
 
     def test_multiple_terms_are_and_search(self):
         response = self.client.get(self.url, {"q": "Django マイグレーション"})
-        self.assertContains(response, "Djangoのマイグレーション入門")
+        self.assertIn("Djangoのマイグレーション入門", found_titles(response))
 
         response = self.client.get(self.url, {"q": "Django proxy_pass"})
-        self.assertNotContains(response, "Djangoのマイグレーション入門")
+        self.assertNotIn("Djangoのマイグレーション入門", found_titles(response))
 
     def test_empty_query_shows_form_without_error(self):
         response = self.client.get(self.url)

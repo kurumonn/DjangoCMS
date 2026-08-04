@@ -1,6 +1,46 @@
 {% extends "base.html" %}
+{% load seo_tags %}
 
-{% block title %}{{ article.title }} | KururuCMS{% endblock %}
+{% block title %}{{ article.display_seo_title }} | {{ site_setting.site_name }}{% endblock %}
+{% block meta_description %}{{ article.display_seo_description }}{% endblock %}
+
+{% block canonical %}
+  {# 正規URL。同じ内容が複数のURLで見えるとき、どれが本物かを検索エンジンへ伝える。 #}
+  <link rel="canonical" href="{% if article.canonical_url %}{{ article.canonical_url }}{% else %}{% absolute_url article.get_absolute_url %}{% endif %}">
+{% endblock %}
+
+{% block og_type %}article{% endblock %}
+{% block og_title %}{{ article.display_seo_title }}{% endblock %}
+{% block og_description %}{{ article.display_seo_description }}{% endblock %}
+{% block og_image %}
+  {% if article.display_og_image %}
+    <meta property="og:image" content="{% absolute_url article.display_og_image.file.url %}">
+    <meta property="og:image:alt" content="{{ article.display_og_image.display_alt }}">
+  {% elif site_setting.default_og_image %}
+    <meta property="og:image" content="{% absolute_url site_setting.default_og_image.file.url %}">
+  {% endif %}
+{% endblock %}
+
+{% block head_extra %}
+  {% if article.noindex or is_preview %}
+    {# 未公開のプレビューは絶対にインデックスさせない。 #}
+    <meta name="robots" content="noindex, nofollow">
+  {% endif %}
+  <meta property="article:published_time" content="{{ article.published_at|date:'c' }}">
+  <meta property="article:modified_time" content="{{ article.updated_at|date:'c' }}">
+  <meta property="article:section" content="{{ article.category.name }}">
+  {% for tag in article.tags.all %}
+    <meta property="article:tag" content="{{ tag.name }}">
+  {% endfor %}
+
+  {# 構造化データはテンプレートに手書きせず、Python 側で JSON を組み立てる。 #}
+  {# 詳しくは seo/templatetags/seo_tags.py のコメントを参照。               #}
+  <script type="application/ld+json">{% article_json_ld article %}</script>
+{% endblock %}
+
+{% block breadcrumb %}
+  {% include "partials/breadcrumb.html" %}
+{% endblock %}
 
 {% block content %}
   {% if is_preview %}

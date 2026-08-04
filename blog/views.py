@@ -21,7 +21,7 @@ from django.core.exceptions import PermissionDenied
 from django.db import transaction
 from django.http import Http404, HttpResponseRedirect
 from django.shortcuts import get_object_or_404
-from django.urls import reverse_lazy
+from django.urls import reverse, reverse_lazy
 from django.utils import timezone
 from django.views.generic import (
     CreateView,
@@ -120,6 +120,12 @@ class ArticleDetailView(DetailView):
         context["comments"] = article.comments.approved()
         context["comment_form"] = CommentForm(user=user)
         context["related_articles"] = article.related_articles()
+        # パンくずリスト。[(表示名, パス), ...] の順で、最後が現在地。
+        context["crumbs"] = [
+            ("ホーム", reverse("blog:article_list")),
+            (article.category.name, article.category.get_absolute_url()),
+            (article.title, article.get_absolute_url()),
+        ]
         return context
 
 

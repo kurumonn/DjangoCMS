@@ -5,6 +5,7 @@
 
 from datetime import timedelta
 
+from django.core.cache import cache
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
@@ -23,8 +24,19 @@ from .factories import (
 PASSWORD = "test-pass-phrase-1234"
 
 
+def listed_titles(response) -> set[str]:
+    """一覧ビューが実際に返した記事のタイトル。
+
+    HTML 全体へ assertNotContains をかけると、サイドバーの「最新記事」に
+    同じタイトルが載っているだけで失敗する。
+    「一覧の中身」を確かめたいときは context を見る。
+    """
+    return {article.title for article in response.context["articles"]}
+
+
 class ArticleListViewTests(TestCase):
     def setUp(self):
+        cache.clear()
         self.category = create_category()
 
     def test_empty_list_does_not_error(self):
@@ -35,13 +47,15 @@ class ArticleListViewTests(TestCase):
     def test_published_article_is_listed(self):
         create_article(title="公開記事", category=self.category)
         response = self.client.get(reverse("blog:article_list"))
-        self.assertContains(response, "公開記事")
+        self.assertIn("公開記事", listed_titles(response))
 
     def test_draft_is_not_listed(self):
         create_article(
             title="下書き記事", category=self.category, status=Article.Status.DRAFT
         )
         response = self.client.get(reverse("blog:article_list"))
+        self.assertNotIn("下書き記事", listed_titles(response))
+        # サイドバーも含めたページ全体へ漏れていないことも確認する。
         self.assertNotContains(response, "下書き記事")
 
     def test_scheduled_article_is_not_listed(self):
@@ -51,6 +65,7 @@ class ArticleListViewTests(TestCase):
             published_at=timezone.now() + timedelta(days=1),
         )
         response = self.client.get(reverse("blog:article_list"))
+        self.assertNotIn("予約記事", listed_titles(response))
         self.assertNotContains(response, "予約記事")
 
     def test_pagination_splits_at_ten(self):
@@ -60,13 +75,46 @@ class ArticleListViewTests(TestCase):
         self.assertEqual(len(response.context["articles"]), 10)
         self.assertTrue(response.context["is_paginated"])
 
-    def test_list_uses_bounded_query_count(self):
-        """select_related / prefetch_related が効いているか（N+1 の検出）。"""
-        for i in range(5):
-            create_article(title=f"N+1テスト{i}", category=self.category)
-        with self.assertNumQueries(3):
-            # 1) 件数カウント 2) 記事＋著者＋カテゴリ 3) タグの prefetch
-            self.client.get(reverse("blog:article_list"))
+    def test_list_query_count_does_not_grow_with_articles(self):
+        """N+1 が起きていないことを確認する。
+
+        「クエリがちょうど N 回」と固定すると、
+        サイドバーやサイト設定を足すたびにテストが壊れて、
+        そのつど数字を書き換えるだけの作業になる。
+
+        本当に見たいのは「記事が増えてもクエリが増えないこと」。
+        件数を変えて2回測り、同じであることを確認する。
+        """
+        from django.db import connection, reset_queries
+        from django.test import override_settings
+
+        url = reverse("blog:article_list")
+
+        def count_queries() -> int:
+            # キャッシュの有無で結果が変わらないよう、毎回捨てる。
+            cache.clear()
+            reset_queries()
+            self.client.get(url)
+            return len(connection.queries)
+
+        with override_settings(DEBUG=True):
+            for i in range(5):
+                create_article(title=f"N+1テストA{i}", category=self.category)
+
+            # 1回目は測らない。サイト設定の行がまだ無く、
+            # その場で INSERT される分だけクエリが余計に増えるため。
+            count_queries()
+            baseline = count_queries()
+
+            for i in range(15):
+                create_article(title=f"N+1テストB{i}", category=self.category)
+            grown = count_queries()
+
+        self.assertEqual(
+            baseline,
+            grown,
+            f"記事を増やしたらクエリが {baseline} → {grown} に増えた（N+1 の疑い）",
+        )
 
 
 class ArticleDetailViewTests(TestCase):
@@ -231,6 +279,7 @@ class ArticleUpdateDeleteViewTests(TestCase):
 
 class CategoryTagListViewTests(TestCase):
     def setUp(self):
+        cache.clear()
         self.news = create_category(name="ニュース")
         self.tips = create_category(name="ヒント")
         create_article(title="ニュース記事", category=self.news)
@@ -238,8 +287,9 @@ class CategoryTagListViewTests(TestCase):
 
     def test_category_page_filters_articles(self):
         response = self.client.get(self.news.get_absolute_url())
-        self.assertContains(response, "ニュース記事")
-        self.assertNotContains(response, "ヒント記事")
+        titles = listed_titles(response)
+        self.assertIn("ニュース記事", titles)
+        self.assertNotIn("ヒント記事", titles)
 
     def test_unknown_category_returns_404(self):
         response = self.client.get("/categories/does-not-exist/")

@@ -33,6 +33,12 @@ class ArticleForm(forms.ModelForm):
             "featured_image",
             "status",
             "published_at",
+            # SEO（6日目に追加）
+            "seo_title",
+            "seo_description",
+            "canonical_url",
+            "og_image",
+            "noindex",
         ]
         widgets = {
             "body": forms.Textarea(attrs={"rows": 18}),

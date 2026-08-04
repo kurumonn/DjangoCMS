@@ -36,7 +36,21 @@ class ArticleAdmin(admin.ModelAdmin):
     fieldsets = (
         (None, {"fields": ("title", "slug", "body")}),
         ("分類", {"fields": ("category", "tags")}),
+        ("メディア", {"fields": ("featured_image",)}),
         ("公開", {"fields": ("status", "published_at", "author")}),
+        (
+            "SEO",
+            {
+                "classes": ("collapse",),
+                "fields": (
+                    "seo_title",
+                    "seo_description",
+                    "canonical_url",
+                    "og_image",
+                    "noindex",
+                ),
+            },
+        ),
     )
 
     def save_model(self, request, obj, form, change):

@@ -1,0 +1,18 @@
+{% load seo_tags %}
+{# パンくずリスト。crumbs は [(表示名, パス), ...]。最後の要素が現在地。 #}
+{% if crumbs %}
+  <nav class="breadcrumb" aria-label="パンくずリスト">
+    <ol>
+      {% for name, path in crumbs %}
+        <li>
+          {% if forloop.last %}
+            <span aria-current="page">{{ name }}</span>
+          {% else %}
+            <a href="{{ path }}">{{ name }}</a>
+          {% endif %}
+        </li>
+      {% endfor %}
+    </ol>
+  </nav>
+  <script type="application/ld+json">{% breadcrumb_json_ld crumbs %}</script>
+{% endif %}

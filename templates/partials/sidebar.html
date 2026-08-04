@@ -1,0 +1,43 @@
+{# サイドバー。context_processors.sidebar が中身を渡す。 #}
+<aside class="sidebar" aria-label="サイドバー">
+  {% if sidebar.recent_articles %}
+    <section class="widget">
+      <h2 class="widget__title">最新記事</h2>
+      <ul class="widget__list">
+        {% for article in sidebar.recent_articles %}
+          <li><a href="{{ article.get_absolute_url }}">{{ article.title }}</a></li>
+        {% endfor %}
+      </ul>
+    </section>
+  {% endif %}
+
+  {% if sidebar.categories %}
+    <section class="widget">
+      <h2 class="widget__title">カテゴリ</h2>
+      <ul class="widget__list">
+        {% for category in sidebar.categories %}
+          <li><a href="{{ category.get_absolute_url }}">{{ category.name }}</a></li>
+        {% endfor %}
+      </ul>
+    </section>
+  {% endif %}
+
+  {% if sidebar.tags %}
+    <section class="widget">
+      <h2 class="widget__title">タグ</h2>
+      <p class="tag-row">
+        {% for tag in sidebar.tags %}
+          <a class="tag" href="{{ tag.get_absolute_url }}">#{{ tag.name }}</a>
+        {% endfor %}
+      </p>
+    </section>
+  {% endif %}
+
+  <section class="widget">
+    <h2 class="widget__title">購読</h2>
+    <ul class="widget__list">
+      <li><a href="{% url 'seo:feed' %}">RSS</a></li>
+      <li><a href="{% url 'seo:feed_atom' %}">Atom</a></li>
+    </ul>
+  </section>
+</aside>
