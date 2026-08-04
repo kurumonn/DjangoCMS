@@ -15,6 +15,7 @@ from .factories import (
     create_article,
     create_author,
     create_category,
+    create_editor,
     create_staff,
     create_user,
 )
@@ -129,11 +130,13 @@ class ArticleCreateViewTests(TestCase):
         self.url = reverse("blog:article_create")
 
     def _payload(self, **overrides):
+        # 既定は下書き。5日目で「公開」は独立した権限になったため、
+        # 公開状態で投稿するテストは publish 権限を持つ利用者で行う。
         data = {
             "title": "新しい記事",
             "body": "本文",
             "category": self.category.pk,
-            "status": Article.Status.PUBLISHED,
+            "status": Article.Status.DRAFT,
             "published_at": "",
         }
         data.update(overrides)
@@ -168,9 +171,9 @@ class ArticleCreateViewTests(TestCase):
         self.assertEqual(article.author.username, "attacker")
 
     def test_published_without_date_gets_current_time(self):
-        create_author(username="dateless")
-        self.client.login(username="dateless", password=PASSWORD)
-        self.client.post(self.url, self._payload())
+        create_editor(username="dateless-editor")
+        self.client.login(username="dateless-editor", password=PASSWORD)
+        self.client.post(self.url, self._payload(status=Article.Status.PUBLISHED))
 
         article = Article.objects.get(title="新しい記事")
         self.assertIsNotNone(article.published_at)

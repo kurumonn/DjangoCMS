@@ -60,6 +60,19 @@ def create_staff(username="editor", **kwargs):
     )
 
 
+def create_editor(username="reviewer", **kwargs):
+    """編集者（承認と公開ができる）。"""
+    user = create_user(username=username, **kwargs)
+    return grant(
+        user,
+        "blog.add_article",
+        "blog.change_article",
+        "blog.delete_article",
+        "blog.publish_article",
+        "blog.review_article",
+    )
+
+
 def create_category(name="お知らせ", **kwargs):
     return Category.objects.create(name=name, **kwargs)
 

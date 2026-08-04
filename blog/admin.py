@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Article, Category, Tag
+from .models import Article, ArticleRevision, Category, Tag
 
 
 @admin.register(Category)
@@ -43,4 +43,26 @@ class ArticleAdmin(admin.ModelAdmin):
         # 著者が未設定なら、操作したユーザーを著者にする。
         if not obj.author_id:
             obj.author = request.user
+        # 管理画面からの編集でも履歴を残す。CMS 画面だけで履歴を取ると、
+        # 「管理画面から直したときだけ履歴が飛ぶ」という穴ができる。
+        if change and obj.pk:
+            before = Article.objects.filter(pk=obj.pk).first()
+            if before is not None:
+                before.snapshot(created_by=request.user, note="管理画面での編集前")
         super().save_model(request, obj, form, change)
+
+
+@admin.register(ArticleRevision)
+class ArticleRevisionAdmin(admin.ModelAdmin):
+    """履歴は読むだけ。管理画面から書き換えられては履歴の意味が無い。"""
+
+    list_display = ("article", "title", "status", "created_by", "created_at")
+    list_filter = ("status", "created_at")
+    search_fields = ("title", "body", "article__title")
+    date_hierarchy = "created_at"
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False

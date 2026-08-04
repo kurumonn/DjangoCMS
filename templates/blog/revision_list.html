@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block title %}{{ article.title }} の履歴 | KururuCMS{% endblock %}
+
+{% block content %}
+  <h1>{{ article.title }} の履歴</h1>
+  <p class="lead">
+    編集するたびに、変更前の内容がここへ保存されます。
+    復元しても、そのときの内容は新しい版として残るので取り消せます。
+  </p>
+
+  {% if revisions %}
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th scope="col">保存日時</th>
+            <th scope="col">タイトル</th>
+            <th scope="col">状態</th>
+            <th scope="col">保存者</th>
+            <th scope="col">メモ</th>
+            <th scope="col">操作</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for revision in revisions %}
+            <tr>
+              <td>
+                <time datetime="{{ revision.created_at|date:'c' }}">
+                  {{ revision.created_at|date:"Y-m-d H:i" }}
+                </time>
+              </td>
+              <td>{{ revision.title }}</td>
+              <td>{{ revision.status }}</td>
+              <td>{{ revision.created_by }}</td>
+              <td>{{ revision.note }}</td>
+              <td>
+                <form method="post"
+                      action="{% url 'blog:article_revision_restore' article.slug revision.pk %}"
+                      class="inline-form">
+                  {% csrf_token %}
+                  <button type="submit" class="btn">この版へ戻す</button>
+                </form>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% if is_paginated %}
+      <nav class="pagination" aria-label="ページ送り">
+        {% if page_obj.has_previous %}
+          <a href="?page={{ page_obj.previous_page_number }}">前へ</a>
+        {% endif %}
+        <span>{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+        {% if page_obj.has_next %}
+          <a href="?page={{ page_obj.next_page_number }}">次へ</a>
+        {% endif %}
+      </nav>
+    {% endif %}
+  {% else %}
+    <p class="empty">まだ履歴はありません。記事を編集すると保存されます。</p>
+  {% endif %}
+
+  <p><a href="{{ article.get_absolute_url }}">← 記事へ戻る</a></p>
+{% endblock %}

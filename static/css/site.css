@@ -276,6 +276,26 @@ img { max-width: 100%; height: auto; }
 .featured-image { margin: 1.5rem 0 0; }
 .featured-image img { border-radius: var(--radius); display: block; }
 
+/* 編集者向け操作バー */
+.editor-bar {
+  margin-top: 2rem;
+  padding: 1rem;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.editor-bar .action-row { gap: 0.5rem; }
+.editor-bar input[type="text"] {
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+  color: var(--fg);
+  font: inherit;
+  min-width: 12rem;
+}
+.editor-bar .notice { margin-bottom: 0; margin-top: 0.75rem; }
+
 /* 関連記事・コメント */
 .related, .comments { margin-top: 3rem; }
 .comment {

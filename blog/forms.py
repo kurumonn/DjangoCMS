@@ -16,6 +16,11 @@ class ArticleForm(forms.ModelForm):
 
     author はフォームに含めない。画面から送られてきた値で著者を決めると、
     他人の名前で記事を投稿できてしまうため、View 側で request.user を入れる。
+
+    公開状態の選択肢は、ログイン中のユーザーの権限で絞る。
+    画面から「公開」を消すだけでは足りない（POST を直接送れば通ってしまう）。
+    このフォームは choices を実際に差し替えるため、
+    権限のない値を送っても検証で弾かれる。
     """
 
     class Meta:
@@ -37,11 +42,44 @@ class ArticleForm(forms.ModelForm):
             "tags": forms.CheckboxSelectMultiple(),
         }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, user=None, **kwargs):
         super().__init__(*args, **kwargs)
+        self.user = user
+
         # datetime-local 入力は "YYYY-MM-DDTHH:MM" 形式しか受け付けない。
-        self.fields["published_at"].input_formats = ["%Y-%m-%dT%H:%M", "%Y-%m-%d %H:%M:%S"]
+        self.fields["published_at"].input_formats = [
+            "%Y-%m-%dT%H:%M",
+            "%Y-%m-%d %H:%M:%S",
+        ]
         self.fields["tags"].required = False
+
+        self.fields["status"].choices = self._allowed_status_choices()
+        if not self.can_publish:
+            self.fields["published_at"].disabled = True
+            self.fields["published_at"].help_text = (
+                "公開日時を設定できるのは、公開権限を持つ利用者だけです。"
+            )
+
+    @property
+    def can_publish(self) -> bool:
+        return bool(self.user and self.user.has_perm("blog.publish_article"))
+
+    def _allowed_status_choices(self):
+        """権限に応じて選べる公開状態を決める。"""
+        if self.can_publish:
+            return Article.Status.choices
+        # 公開権限が無い人は「下書き」と「レビュー待ち」まで。
+        return [
+            (value, label)
+            for value, label in Article.Status.choices
+            if value != Article.Status.PUBLISHED
+        ]
+
+    def clean_status(self):
+        status = self.cleaned_data.get("status")
+        if status == Article.Status.PUBLISHED and not self.can_publish:
+            raise forms.ValidationError("記事を公開する権限がありません。")
+        return status
 
     def clean(self):
         cleaned = super().clean()
@@ -55,3 +93,14 @@ class ArticleForm(forms.ModelForm):
             cleaned["published_at"] = timezone.now()
 
         return cleaned
+
+
+class RevisionNoteForm(forms.Form):
+    """レビュー依頼・承認・差し戻しに添えるメモ。"""
+
+    note = forms.CharField(
+        label="メモ",
+        max_length=200,
+        required=False,
+        widget=forms.TextInput(attrs={"placeholder": "任意（差し戻し理由など）"}),
+    )

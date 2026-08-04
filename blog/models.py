@@ -188,6 +188,13 @@ class Article(models.Model):
             # 一覧ページの絞り込み（status + published_at 降順）を高速化する。
             models.Index(fields=["status", "-published_at"]),
         ]
+        # Django が自動で作る add/change/delete に加えて、
+        # 「公開してよいか」「承認してよいか」を独立した権限にする。
+        # これがないと「記事を書ける人＝勝手に公開できる人」になってしまう。
+        permissions = [
+            ("publish_article", "記事を公開できる"),
+            ("review_article", "記事のレビューを承認できる"),
+        ]
 
     def __str__(self) -> str:
         return self.title
@@ -235,3 +242,82 @@ class Article(models.Model):
             and self.published_at is not None
             and self.published_at <= timezone.now()
         )
+
+    @property
+    def is_scheduled(self) -> bool:
+        """予約投稿（公開状態だが、公開日時がまだ来ていない）か。"""
+        return (
+            self.status == self.Status.PUBLISHED
+            and self.published_at is not None
+            and self.published_at > timezone.now()
+        )
+
+    def snapshot(self, *, created_by, note: str = "") -> "ArticleRevision":
+        """現在の内容を1つの版として保存する。
+
+        更新の**前**に呼ぶ。更新後に呼ぶと、変更前の内容が残らない。
+        """
+        return ArticleRevision.objects.create(
+            article=self,
+            title=self.title,
+            body=self.body,
+            status=self.status,
+            published_at=self.published_at,
+            created_by=created_by,
+            note=note,
+        )
+
+
+class ArticleRevision(models.Model):
+    """記事の変更履歴。
+
+    「誰が・いつ・どんな内容だったか」を残し、事故があれば戻せるようにする。
+    本文だけでなく status と published_at も残すのは、
+    「うっかり公開してしまった」を戻すときに必要になるため。
+    """
+
+    article = models.ForeignKey(
+        Article,
+        on_delete=models.CASCADE,
+        related_name="revisions",
+        verbose_name="記事",
+    )
+    title = models.CharField("タイトル", max_length=200)
+    body = models.TextField("本文")
+    status = models.CharField("公開状態", max_length=20)
+    published_at = models.DateTimeField("公開日時", null=True, blank=True)
+
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="article_revisions",
+        verbose_name="保存者",
+    )
+    created_at = models.DateTimeField("保存日時", auto_now_add=True)
+    note = models.CharField("メモ", max_length=200, blank=True, default="")
+
+    class Meta:
+        verbose_name = "記事の版"
+        verbose_name_plural = "記事の版"
+        ordering = ["-created_at"]
+        indexes = [models.Index(fields=["article", "-created_at"])]
+
+    def __str__(self) -> str:
+        return f"{self.title}（{self.created_at:%Y-%m-%d %H:%M}）"
+
+    def restore_to_article(self, *, restored_by) -> Article:
+        """この版の内容を記事へ書き戻す。
+
+        書き戻す前に、いまの内容も1つの版として保存する。
+        そうしないと「復元したけれど、やっぱり戻したい」ができなくなる。
+        """
+        article = self.article
+        article.snapshot(created_by=restored_by, note="復元前の自動保存")
+
+        article.title = self.title
+        article.body = self.body
+        # status と published_at は戻さない。
+        # 「公開中の記事の本文だけを古い版に戻す」が実務では最も多く、
+        # 復元操作が同時に公開状態まで変えると事故になる。
+        article.save(update_fields=["title", "body", "updated_at"])
+        return article

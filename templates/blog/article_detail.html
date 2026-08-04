@@ -46,11 +46,44 @@
     <div class="article__body">{{ article.body|linebreaks }}</div>
   </article>
 
-  {% if can_edit %}
-    <p class="action-row">
-      <a class="btn" href="{% url 'blog:article_update' article.slug %}">編集</a>
-      <a class="btn btn--danger" href="{% url 'blog:article_delete' article.slug %}">削除</a>
-    </p>
+  {% if can_edit or can_review %}
+    <section class="editor-bar">
+      <h2 class="visually-hidden">編集者向け操作</h2>
+      <div class="action-row">
+        {% if can_edit %}
+          <a class="btn" href="{% url 'blog:article_update' article.slug %}">編集</a>
+          <a class="btn" href="{% url 'blog:article_revisions' article.slug %}">履歴</a>
+          <a class="btn btn--danger" href="{% url 'blog:article_delete' article.slug %}">削除</a>
+        {% endif %}
+
+        {# 状態を変える操作はすべて POST。リンク（GET）にしてはいけない。 #}
+        {% if can_submit_review %}
+          <form method="post" action="{% url 'blog:article_submit_review' article.slug %}" class="inline-form">
+            {% csrf_token %}
+            <button type="submit" class="btn btn--primary">レビューを依頼</button>
+          </form>
+        {% endif %}
+
+        {% if can_review and article.status == "review" %}
+          <form method="post" action="{% url 'blog:article_approve' article.slug %}" class="inline-form">
+            {% csrf_token %}
+            <button type="submit" class="btn btn--primary">承認して公開</button>
+          </form>
+          <form method="post" action="{% url 'blog:article_reject' article.slug %}" class="inline-form">
+            {% csrf_token %}
+            <label class="visually-hidden" for="reject-note">差し戻し理由</label>
+            <input type="text" id="reject-note" name="note" maxlength="200" placeholder="差し戻し理由（任意）">
+            <button type="submit" class="btn btn--danger">差し戻す</button>
+          </form>
+        {% endif %}
+      </div>
+
+      {% if article.is_scheduled %}
+        <p class="notice">
+          予約投稿です。{{ article.published_at|date:"Y年n月j日 H:i" }} に公開されます。
+        </p>
+      {% endif %}
+    </section>
   {% endif %}
 
   {% if related_articles %}
