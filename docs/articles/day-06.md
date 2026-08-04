@@ -27,7 +27,7 @@
 
 XML サイトマップが出力されます。
 
-![XMLサイトマップ](../images/day-06-sitemap.png)
+<!-- screenshot: day-06-sitemap.png | XMLサイトマップ -->
 
 サイドバーとパンくずリストも追加されます。
 

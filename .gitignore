@@ -25,6 +25,10 @@ id_rsa
 credentials.json
 secrets/
 
+# 記事用スクリーンショット — ブログ側にだけ載せるのでリポジトリには含めない
+# （tools/capture_screenshots.py でいつでも撮り直せる）
+/docs/images/
+
 # エディタ・OS
 .idea/
 .vscode/

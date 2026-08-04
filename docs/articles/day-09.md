@@ -24,11 +24,11 @@
 
 多要素認証の一覧です。
 
-![多要素認証の一覧](../images/day-09-mfa-index.png)
+<!-- screenshot: day-09-mfa-index.png | 多要素認証の一覧 -->
 
 TOTP の設定画面です。QR コードが出ます。
 
-![TOTPの設定](../images/day-09-totp-activate.png)
+<!-- screenshot: day-09-totp-activate.png | TOTPの設定 -->
 
 > このスクリーンショットに映っているシークレットは、
 > 手元の SQLite にしか存在しないデモ用アカウントのものです。

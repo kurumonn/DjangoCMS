@@ -24,11 +24,11 @@
 
 ダッシュボードはこうなります。
 
-![ダッシュボード](../images/day-07-dashboard.png)
+<!-- screenshot: day-07-dashboard.png | ダッシュボード -->
 
 ブロックエディターはこうです。
 
-![ブロックエディター](../images/day-07-block-editor.png)
+<!-- screenshot: day-07-block-editor.png | ブロックエディター -->
 
 ---
 

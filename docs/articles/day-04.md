@@ -24,11 +24,11 @@ CMS として使えるようにする機能を足します。
 
 記事詳細に、関連記事とコメント欄が付きます。
 
-![記事詳細とコメント欄](../images/day-04-article-detail.png)
+<!-- screenshot: day-04-article-detail.png | 記事詳細とコメント欄 -->
 
 サイト内検索も動きます。
 
-![サイト内検索](../images/day-04-search.png)
+<!-- screenshot: day-04-search.png | サイト内検索 -->
 
 ---
 

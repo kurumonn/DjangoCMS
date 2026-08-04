@@ -25,7 +25,7 @@
 
 記事一覧はこうなります。
 
-![記事一覧](../images/day-03-article-list.png)
+<!-- screenshot: day-03-article-list.png | 記事一覧 -->
 
 サイドバーやタグは6日目に追加したものです。3日目の時点ではもっと素朴です。
 

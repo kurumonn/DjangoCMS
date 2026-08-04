@@ -26,15 +26,15 @@
 
 ログイン画面です。メール・ワンタイムコード・ソーシャルがそろっています。
 
-![ログイン画面](../images/day-08-login.png)
+<!-- screenshot: day-08-login.png | ログイン画面 -->
 
 ワンタイムコードの要求画面です。
 
-![ワンタイムコードの要求](../images/day-08-login-by-code.png)
+<!-- screenshot: day-08-login-by-code.png | ワンタイムコードの要求 -->
 
 ユーザー登録画面です。
 
-![ユーザー登録](../images/day-08-signup.png)
+<!-- screenshot: day-08-signup.png | ユーザー登録 -->
 
 認証の全体像はこうなります。
 
