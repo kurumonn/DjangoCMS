@@ -45,7 +45,7 @@ HTML コメントなので GitHub 上では表示されません。
 | 7 | [Django で管理画面を自作――ダッシュボードとブロックエディター](day-07.md) | `day-07` |
 | 8 | [django-allauth 完全入門――メール認証とワンタイムコードログイン](day-08.md) | `day-08` |
 | 9 | [Django でパスキー認証――TOTP・WebAuthn・復旧方法まで実装](day-09.md) | `day-09` |
-| 10 | Django CMS 完成――テスト・Docker・セキュリティ・本番公開 | `day-10` |
+| 10 | [Django CMS 完成――テスト・Docker・PostgreSQL・Redis・本番設定](day-10.md) | `day-10` |
 
 ## 読み方
 
