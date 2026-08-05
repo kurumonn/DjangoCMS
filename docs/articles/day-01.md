@@ -76,17 +76,36 @@ DjangoCMS/
 python -m venv .venv
 ```
 
-Linux / macOS で有効化します。
+仮想環境を有効化します。ここだけ OS で書き方が違います。
+
+<div class="env-block env-linux env-macos">
+
+**Linux / macOS**
 
 ```bash
 source .venv/bin/activate
 ```
 
-Windows の PowerShell で有効化します。
+</div>
+
+<div class="env-block env-windows">
+
+**Windows (PowerShell)**
 
 ```powershell
 .venv\Scripts\Activate.ps1
 ```
+
+初回は実行ポリシーで止められることがあります。
+その場合は、**現在のユーザーに対してのみ**署名付きスクリプトを許可します。
+
+```powershell
+Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
+```
+
+`-Scope CurrentUser` を付けるのが要点です。付けないと機械全体の設定を変えることになります。
+
+</div>
 
 Django と、パスワードハッシュに使う `argon2-cffi` を入れます。
 
@@ -531,17 +550,25 @@ Windows で PowerShell とコマンドプロンプトを行き来したときに
 
 **確認** — どの Python が使われているかを見ます。
 
-Windows PowerShell:
+<div class="env-block env-windows">
+
+**Windows (PowerShell)**
 
 ```powershell
 (Get-Command python).Source
 ```
 
-Linux / macOS:
+</div>
+
+<div class="env-block env-linux env-macos">
+
+**Linux / macOS**
 
 ```bash
 which python
 ```
+
+</div>
 
 プロジェクト内の `.venv` を指していれば正しい状態です。
 

@@ -21,6 +21,60 @@
 「8. よくあるエラー」は想像で書いていません。
 [`docs/errors/`](../errors/) に記録した、**実際に手が止まったもの**だけを載せています。
 
+## 環境別の手順の書き方
+
+OS やディストリビューションでコマンドが変わるところは、
+**全部を並べたうえで、読者に選ばせます**。
+
+原稿にはこう書きます。
+
+```html
+<div class="env-block env-ubuntu">
+
+**Ubuntu 24.04 LTS**
+
+```bash
+sudo apt update
+```
+
+</div>
+
+<div class="env-block env-rhel env-alma">
+
+**Oracle Linux / AlmaLinux**
+
+```bash
+sudo dnf check-update
+```
+
+</div>
+```
+
+使えるキーは次のとおりです。
+
+| キー | 表示名 |
+| --- | --- |
+| `env-ubuntu` | Ubuntu 24.04 LTS |
+| `env-rhel` | Oracle Linux / RHEL 系 |
+| `env-alma` | AlmaLinux / Rocky Linux |
+| `env-windows` | Windows (PowerShell) |
+| `env-macos` | macOS |
+| `env-linux` | Linux |
+
+コマンドが同じ環境は、1つのブロックに複数のキーを書いてまとめます
+（上の `env-rhel env-alma` がその例）。
+
+- **GitHub 上では全環境がそのまま表示されます。** 読者は差分を見比べられます。
+- **ブログでは記事の先頭にプルダウンが出て、選んだ環境だけが表示されます。**
+  選択はブラウザーに記憶され、連載の他の記事にも引き継がれます。
+- JavaScript が動かない場合は全環境が表示されます。
+  隠すのは JS の役目にしてあるので、「選ばないと何も読めない」状態にはなりません。
+
+`div` の直後と `</div>` の直前には**空行が必要**です。
+無いと Markdown が中身を変換せず、記法が生のまま表示されます。
+
+## 画像について
+
 「2. 今日の完成画面」の画像は、このリポジトリには入れていません。
 代わりに次のマーカーを置き、ブログへ投稿するときだけ実際の画像へ差し替えます。
 
