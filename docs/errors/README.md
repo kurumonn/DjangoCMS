@@ -33,6 +33,7 @@
 | [day-08.md](day-08.md) | 8日目 | テンプレートコメントの罠、URLの二重include、コード形式、メールのサイト名 |
 | [day-09.md](day-09.md) | 9日目 | humanize 未登録、再認証とテスト、DEBUG連動の危険、編集者権限の抜け |
 | [day-10.md](day-10.md) | 10日目 | HSTSと検査の衝突、依存宣言の嘘2件、ヘルスチェックの自滅、pg_restore の入力 |
+| [day-11.md](day-11.md) | 11日目 | --dry-run が効いていない、AlmaLinuxのcurl衝突、Dockerのマウント |
 | [publishing.md](publishing.md) | 公開作業 | 日本語に空白が入る、解答が露出/記法が丸見え、slug 衝突 |
 
 `publishing.md` だけは KururuCMS 自体のエラーではなく、
