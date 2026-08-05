@@ -1,36 +1,39 @@
-"""KururuCMS の Django 設定。
+"""どの環境でも同じ設定。
 
-1日目はまず「動く最小構成」を作る。
-10日目に config/settings/ パッケージへ分割し、本番設定を切り離す。
+環境ごとに変わるもの（DEBUG・データベース・キャッシュ・メール送信・HTTPS）は
+ここには書かない。local.py / test.py / production.py が受け持つ。
+
+判断の基準は「開発機と本番で値が違ってよいか」。
+違ってよいものを base に書くと、本番だけ設定が抜けている状態に気づけなくなる。
 """
 
 import os
 from pathlib import Path
 
 # BASE_DIR は manage.py があるディレクトリ。
-BASE_DIR = Path(__file__).resolve().parent.parent
+# このファイルは config/settings/base.py なので、3つ上まで遡る。
+# （9日目までは config/settings.py だったので parent が1つ少なかった。
+#   分割したときにここを直し忘れると、静的ファイルの場所が1階層ずれる。）
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
-# ---------------------------------------------------------------------------
-# 秘密情報
-# ---------------------------------------------------------------------------
-# SECRET_KEY はセッション署名や CSRF トークンの生成に使う。
-# 漏えいするとログイン偽装が可能になるため、本番では必ず環境変数で渡す。
-# 開発用のフォールバックは DEBUG のときだけ許可する。
-DEBUG = os.environ.get("DJANGO_DEBUG", "1") == "1"
 
-SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "")
-if not SECRET_KEY:
-    if not DEBUG:
-        raise RuntimeError(
-            "DJANGO_SECRET_KEY が未設定です。本番では環境変数で必ず指定してください。"
-        )
-    SECRET_KEY = "django-insecure-dev-only-do-not-use-in-production"
+def env_bool(name: str, default: bool) -> bool:
+    """環境変数を真偽値として読む。
 
-ALLOWED_HOSTS = [
-    h.strip()
-    for h in os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
-    if h.strip()
-]
+    "1" だけを真として扱う。"true" や "yes" も許すと、
+    "True" と書いたつもりの "ture" が静かに False になる。
+    書き方を1つに絞ると、間違えたときに必ず False になって気づける。
+    """
+    raw = os.environ.get(name)
+    if raw is None:
+        return default
+    return raw.strip() == "1"
+
+
+def env_list(name: str, default: str = "") -> list[str]:
+    """カンマ区切りの環境変数をリストにする。空要素は捨てる。"""
+    return [item.strip() for item in os.environ.get(name, default).split(",") if item.strip()]
+
 
 # 管理画面のURLパス。既定の "admin" のままだと総当たり攻撃の的になるため、
 # 本番では環境変数で推測しにくい値へ変更する。
@@ -115,17 +118,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "config.wsgi.application"
 ASGI_APPLICATION = "config.asgi.application"
-
-# ---------------------------------------------------------------------------
-# データベース
-# ---------------------------------------------------------------------------
-# 1日目は SQLite で始める。10日目に PostgreSQL へ移行する。
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
-    }
-}
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
@@ -228,8 +220,13 @@ ACCOUNT_EMAIL_SUBJECT_PREFIX = "[KururuCMS] "
 
 # --- レート制限 ---
 # 総当たりとメール爆撃を止める。単位は "回/期間"。
-# 本番では共有キャッシュ（Redis）が必要。
-# ローカルメモリキャッシュだと、Gunicorn のワーカー数だけ制限が緩くなる。
+#
+# ★ここが 10日目で効いてくる。★
+# レート制限の回数は CACHES に記録される。
+# ローカルメモリキャッシュはプロセスごとに別物なので、
+# Gunicorn をワーカー4本で動かすと、制限が実質4倍に緩む。
+# 「5回まで」のつもりが20回試せる。
+# 本番では必ず共有キャッシュ（Redis）にする。production.py を参照。
 ACCOUNT_RATE_LIMITS = {
     "login": "5/5m",                  # IP ごとのログイン試行
     "login_failed": "5/5m/ip,3/5m/key",  # 失敗回数（アカウント単位も含む）
@@ -267,6 +264,7 @@ SOCIALACCOUNT_PROVIDERS = {
         "SCOPE": ["user:email"],
     },
 }
+
 # ---------------------------------------------------------------------------
 # 多要素認証・パスキー（9日目）
 # ---------------------------------------------------------------------------
@@ -298,24 +296,12 @@ MFA_RECOVERY_CODE_DIGITS = 8
 # 後からいつでも見られる状態にすると、画面を覗かれただけで突破される。
 MFA_RECOVERY_CODES_SHOW_ONCE = True
 
-# WebAuthn は HTTPS でしか動かない（localhost は例外扱い）。
-# 開発中だけ緩め、本番では必ず False にする。
-#
-# 「DEBUG と同じ値にしておけば安全」では不十分。
-# DEBUG は環境変数の書き忘れで True のまま本番へ出ることがあり、
-# そのとき WebAuthn の保護まで一緒に外れてしまう。
-# 独立した環境変数にしたうえで、accounts/checks.py の
-# システムチェックで「本番なのに有効」を検出する。
-MFA_WEBAUTHN_ALLOW_INSECURE_ORIGIN = (
-    os.environ.get("DJANGO_MFA_ALLOW_INSECURE_ORIGIN", "1" if DEBUG else "0") == "1"
-)
-
 # パスキーやTOTPの削除など、重要な操作の前に再認証を求める。
 MFA_ALLOW_UNVERIFIED_EMAIL = False
 
 # 管理画面へ入れる利用者には多要素認証を必須にする。
 # 記事を書くだけの利用者にまで強制すると運用が回らないため、対象を絞る。
-MFA_REQUIRED_FOR_STAFF = os.environ.get("DJANGO_MFA_REQUIRED_FOR_STAFF", "1") == "1"
+MFA_REQUIRED_FOR_STAFF = env_bool("DJANGO_MFA_REQUIRED_FOR_STAFF", True)
 
 # ソーシャル側で確認済みのメールアドレスは、こちらで再確認しない。
 SOCIALACCOUNT_EMAIL_AUTHENTICATION = False
@@ -352,14 +338,15 @@ DATA_UPLOAD_MAX_NUMBER_FIELDS = 500
 
 # 信頼できるリバースプロキシの段数。
 # 0 のとき X-Forwarded-For を一切信用しない（開発既定）。
-# Nginx の背後に置いたら 1 にする（デプロイ編6日目）。
+# Nginx の背後に置いたら 1 にする。
 TRUSTED_PROXY_COUNT = int(os.environ.get("DJANGO_TRUSTED_PROXY_COUNT", "0"))
 
 # ---------------------------------------------------------------------------
 # セキュリティ既定値
 # ---------------------------------------------------------------------------
-# DEBUG=False の環境（本番・ステージング）では常に有効化する。
-# 8日目・10日目でさらに HSTS などを追加する。
+# ここには「どの環境でも下げてはいけない」ものだけを置く。
+# HTTPS を前提とする設定（Secure Cookie・HSTS・SSLリダイレクト）は
+# production.py にある。開発機は HTTP なので、ここに書くと開発が止まる。
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = "Lax"
 CSRF_COOKIE_SAMESITE = "Lax"
@@ -367,11 +354,4 @@ X_FRAME_OPTIONS = "DENY"
 SECURE_CONTENT_TYPE_NOSNIFF = True
 SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
 
-if not DEBUG:
-    SESSION_COOKIE_SECURE = True
-    CSRF_COOKIE_SECURE = True
-    SECURE_SSL_REDIRECT = True
-
-# 開発中はコンソールへメールを出す。8日目に本物の SMTP を設定する。
-EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 DEFAULT_FROM_EMAIL = os.environ.get("DJANGO_DEFAULT_FROM_EMAIL", "noreply@example.com")

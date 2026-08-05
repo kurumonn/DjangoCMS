@@ -34,3 +34,6 @@ secrets/
 .vscode/
 .DS_Store
 Thumbs.db
+
+# バックアップの実ファイル（10日目）
+/backups/

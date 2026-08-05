@@ -8,7 +8,13 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
 
+from core.views import healthz
+
 urlpatterns = [
+    # 死活監視。compose の healthcheck と、デプロイ編の監視から叩かれる。
+    # 認証を掛けていないのは、監視側に認証情報を持たせたくないため。
+    # 返すのは状態だけで、内部の情報は含めない（core/views.py を参照）。
+    path("healthz/", healthz, name="healthz"),
     # 管理画面のパスは環境変数で変更できるようにしておく。
     # 既定の /admin/ は総当たり攻撃の標的になりやすい。
     path(f"{settings.ADMIN_URL_PATH}/", admin.site.urls),

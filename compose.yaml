@@ -1,0 +1,94 @@
+# KururuCMS の本番相当の構成。
+#
+#   docker compose up -d --build
+#
+# 4つのコンテナが役割を分けている。
+#
+#   nginx  外からの窓口。HTTPS の終端と、静的ファイル・画像の配信
+#   web    Django（Gunicorn）。HTML を組み立てる仕事だけをする
+#   db     PostgreSQL
+#   redis  キャッシュとセッション、そしてレート制限の回数
+#
+# 「web が全部やればいいのでは」と思うところだが、
+# 画像1枚を返すたびに Python のワーカーが1つ埋まると、
+# 同時に記事を読める人数がそのぶん減る。
+# 静的なファイルは nginx に任せる。
+
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    # ポートを外へ出さない。
+    # 5432 をホストへ公開すると、そのサーバーのファイアウォール次第で
+    # インターネットから直接データベースへ届く。
+    # web からはコンテナ間ネットワークで繋がるので、公開は不要。
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:8-alpine
+    restart: unless-stopped
+    # appendonly を有効にすると、再起動してもセッションが残る。
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  web:
+    build: .
+    restart: unless-stopped
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      # nginx へ渡すために共有する。
+      - staticfiles:/app/staticfiles
+      - media:/app/media
+    # ここでもポートを公開しない。外からは必ず nginx を通す。
+    healthcheck:
+      # 中身は docker/healthcheck.py を参照。
+      # コンテナの中から自分を叩くと nginx を通らないので、
+      # ALLOWED_HOSTS と SECURE_SSL_REDIRECT の両方に引っかかる。
+      # スクリプト側で nginx が付けるヘッダーを再現している。
+      test: ["CMD", "python", "/app/docker/healthcheck.py"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+
+  nginx:
+    image: nginx:1.29-alpine
+    restart: unless-stopped
+    depends_on:
+      - web
+    ports:
+      - "80:80"
+    volumes:
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      # 読み取り専用でマウントする。
+      # nginx が書き込める必要は無いので、権限は狭くしておく。
+      - staticfiles:/var/www/static:ro
+      - media:/var/www/media:ro
+
+volumes:
+  pgdata:
+  redisdata:
+  staticfiles:
+  media:

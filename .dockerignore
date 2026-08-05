@@ -1,0 +1,39 @@
+# イメージへ入れないもの。
+#
+# ここが緩いと2つの問題が起きる。
+#   1. イメージが太る（ビルドが遅く、配布も遅い）
+#   2. **秘密がイメージに焼き込まれる**
+# 特に .env。イメージを誰かに渡した時点で、そこに本番の鍵が入っている。
+
+.git
+.gitignore
+.venv
+venv
+__pycache__
+*.py[cod]
+
+# 秘密情報
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+credentials.json
+secrets/
+
+# 開発用の成果物
+db.sqlite3
+db.sqlite3-journal
+staticfiles/
+media/
+*.log
+
+# ドキュメントとツール（実行には要らない）
+docs/
+tools/
+LICENSE
+README.md
+
+.idea/
+.vscode/
+.DS_Store

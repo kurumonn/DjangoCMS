@@ -27,7 +27,7 @@ git checkout day-05         # 5日目時点の状態で動かす
 | `day-07` | [Django で管理画面を自作](docs/articles/day-07.md) | ダッシュボード・ブロックエディター |
 | `day-08` | [django-allauth 完全入門](docs/articles/day-08.md) | メール認証・ワンタイムコード |
 | `day-09` | [Django でパスキー認証](docs/articles/day-09.md) | TOTP・WebAuthn・復旧手段 |
-| `day-10` | Django CMS 完成 | テスト・Docker・本番設定 |
+| `day-10` | [Django CMS 完成](docs/articles/day-10.md) | テスト・Docker・PostgreSQL・Redis・本番設定 |
 
 ### 第2部：本番へデプロイする
 
@@ -81,6 +81,60 @@ python manage.py runserver
 ```
 
 `http://127.0.0.1:8000/` を開くとトップページが表示されます。
+
+`manage.py` は `config.settings.local`（開発用）を既定にしています。
+
+## 本番相当の構成で動かす（10日目以降）
+
+PostgreSQL・Redis・Nginx・Gunicorn を一式立ち上げます。
+
+```bash
+cp .env.example .env
+```
+
+`.env` のダミー値を、**その場で生成した値**へ置き換えてください
+（`DJANGO_SECRET_KEY` などは `.env.example` のままだと起動しません）。
+
+```bash
+docker compose up -d --build
+```
+
+手元で画面まで確認したいときは、TLS 終端を真似る上書き設定を足します。
+
+```bash
+docker compose -f compose.yaml -f compose.local-check.yaml up -d --build
+```
+
+`http://localhost/` が開きます。本番の Django 設定には手を入れず、
+Nginx が送るヘッダーだけを差し替える方式です。
+
+### バックアップと復元の訓練
+
+```bash
+./scripts/backup.sh
+```
+
+```bash
+./scripts/restore_drill.sh backups/db-20260805-090000.dump
+```
+
+訓練は使い捨ての別データベースへ復元して件数を比べます。
+**本番のデータベースには触りません。**
+
+バックアップは「取れているか」ではなく「戻せるか」でしか価値が測れません。
+そして戻せないと分かるのは、たいてい本当に必要になったときです。
+
+## 設定ファイルの構成
+
+| モジュール | 使う場面 |
+| --- | --- |
+| `config.settings.base` | 共通（直接は指定しない） |
+| `config.settings.local` | 開発機。`manage.py` の既定 |
+| `config.settings.test` | テスト |
+| `config.settings.production` | 本番。`wsgi.py` / `asgi.py` の既定 |
+
+`config.settings` 自体は空です。
+「どの環境の設定で動いているか分からないまま動く」状態を作らないためです。
 
 ## セキュリティ方針
 
