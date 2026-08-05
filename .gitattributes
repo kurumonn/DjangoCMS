@@ -1,0 +1,23 @@
+# 改行コードの扱い。
+#
+# シェルスクリプトが CRLF になると、Linux 側で
+#     /usr/bin/env: 'bash\r': No such file or directory
+# という分かりにくい形で落ちます。
+# シェバング行の末尾に \r が付き、"bash\r" という名前の実行ファイルを
+# 探しに行くためです。
+#
+# Windows で編集するとエディタや書き込み処理が勝手に CRLF へ変えることが
+# あるので、git 側で LF に固定します。
+* text=auto eol=lf
+
+*.sh   text eol=lf
+*.conf text eol=lf
+Dockerfile text eol=lf
+
+# バイナリは変換しない
+*.png binary
+*.jpg binary
+*.ico binary
+*.pdf binary
+*.dump binary
+*.gz binary
