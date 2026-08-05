@@ -53,14 +53,22 @@ sudo dnf check-update
 
 使えるキーは次のとおりです。
 
-| キー | 表示名 |
-| --- | --- |
-| `env-ubuntu` | Ubuntu 24.04 LTS |
-| `env-rhel` | Oracle Linux / RHEL 系 |
-| `env-alma` | AlmaLinux / Rocky Linux |
-| `env-windows` | Windows (PowerShell) |
-| `env-macos` | macOS |
-| `env-linux` | Linux |
+| キー | 表示名 | 軸 |
+| --- | --- | --- |
+| `env-ubuntu` | Ubuntu 24.04 LTS | サーバーの環境 |
+| `env-rhel` | Oracle Linux / RHEL 系 | サーバーの環境 |
+| `env-alma` | AlmaLinux / Rocky Linux | サーバーの環境 |
+| `env-windows` | Windows (PowerShell) | 手元の端末 |
+| `env-macos` | macOS | 手元の端末 |
+| `env-linux` | Linux | 手元の端末 |
+
+**軸が違うものは別のプルダウンになります。**
+1つの記事に「サーバーの OS」と「手元の端末の OS」が両方出てくる場合
+（11日目がその例）、プルダウンが2つ並びます。
+
+1つにまとめると壊れます。手元の端末で Linux を選んだ瞬間、
+サーバー側の Ubuntu / RHEL の手順がどれにも当てはまらなくなって
+全部消えるためです。
 
 コマンドが同じ環境は、1つのブロックに複数のキーを書いてまとめます
 （上の `env-rhel env-alma` がその例）。
