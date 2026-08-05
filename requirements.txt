@@ -8,7 +8,7 @@
 #   4日目   Pillow（アップロード画像の実体検証）
 #   8日目   django-allauth（認証）, fido2 と qrcode は 9日目のパスキー/TOTP 用
 #   10日目  psycopg, redis, gunicorn（本番構成）
-Django==5.2.15
+Django==5.2.17
 argon2-cffi==25.1.0
 Pillow==12.3.0
 # 角かっこは「追加機能（extras）」の指定。
