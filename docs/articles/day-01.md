@@ -70,13 +70,147 @@ DjangoCMS/
 
 ## 4. 完成コード
 
-### 4.1 仮想環境と Django のインストール
+### 4.1 Python を用意する
 
-```bash
-python -m venv .venv
+先に Python が要ります。**ここで `python` と書くか `python3` と書くかは、
+OS によって変わります。** そして間違えると、意味の分かりにくいエラーが出ます。
+
+<div class="env-block env-windows">
+
+**Windows (PowerShell)**
+
+Windows には `py` という起動用のコマンドが付いてきます。
+複数の版を入れていても、`-3` を付ければ Python 3 系が選ばれます。
+
+```powershell
+py -3 -V
 ```
 
-仮想環境を有効化します。ここだけ OS で書き方が違います。
+`Python 3.12.x` のように出れば入っています。
+出なければ [python.org](https://www.python.org/downloads/) から入れるか、次を実行します。
+
+```powershell
+winget install Python.Python.3.12
+```
+
+</div>
+
+<div class="env-block env-macos">
+
+**macOS**
+
+```bash
+python3 -V
+```
+
+`python` ではなく `python3` です。
+macOS に昔から入っていた `python`（2系）は、現在の macOS では削除されています。
+
+入っていなければ Homebrew で入れます。
+
+```bash
+brew install python@3.12
+```
+
+</div>
+
+<div class="env-block env-linux">
+
+**Linux**
+
+```bash
+python3 -V
+```
+
+ここが一番ばらつきます。実際に確かめた結果を並べます。
+
+| 環境 | `python` | `python3` |
+| --- | --- | --- |
+| Ubuntu 24.04 の素のイメージ | 無し | **無し** |
+| Debian 12 の素のイメージ | 無し | **無し** |
+| Oracle Linux 9 / AlmaLinux 9 | 無し | 3.9.25 |
+| Oracle Linux 10.2 | 3.12.13 | 3.12.13 |
+
+`python3 -V` が動かなければ入れます。
+
+```bash
+# Debian / Ubuntu 系
+sudo apt update && sudo apt install -y python3 python3-venv
+
+# RHEL 系（Oracle Linux / AlmaLinux / Rocky）
+sudo dnf install -y python3
+```
+
+Debian / Ubuntu で **`python3-venv` も一緒に入れる**のが要点です。
+これを忘れると `python3` は動くのに、次の手順の `-m venv` だけが失敗します。
+
+</div>
+
+#### どの版を選ぶか ―「新しい方が安全」とは限らない
+
+Django 5.2 が要求するのは **Python 3.10 以上**です
+（配布物のメタデータに `Requires-Python: >=3.10` と書かれています）。
+
+ここで問題になるのが RHEL 9 系です。既定の `python3` は 3.9 なので、
+そのまま入れようとすると次のように弾かれます。
+
+```text
+ERROR: Could not find a version that satisfies the requirement Django==5.2.17
+       (from versions: ... 4.2.29, 4.2.30)
+```
+
+「5.2.17 なんて存在しない」と読めますが、そうではありません。
+**あなたの Python では使えない**という意味です。
+pip は、いま動いている Python で使える版だけを候補に並べます。
+この場合は版を指定して入れ、以降もその名前で呼びます。
+
+```bash
+sudo dnf install -y python3.12
+python3.12 -m venv .venv
+```
+
+では常に最新版が良いかというと、そこも単純ではありません。
+ディストリビューションが配る Python には、**新しい版へ上げなくても
+セキュリティ修正だけが取り込まれます**（バックポート）。
+Oracle Linux 10 の 3.12.13 は、この形で保守されている版です。
+「3.14 が出ているのに 3.12 のままだから危ない」とは言えません。
+
+この連載の本番環境がどうなっているかを書いておきます。
+
+| 場所 | 中身 |
+| --- | --- |
+| サーバー本体 | Oracle Linux 10.2 / Python 3.12.13 |
+| アプリを動かすコンテナ | `python:3.14.6`（Debian 13）/ Django 5.2.17 |
+| データベース | PostgreSQL |
+
+**サーバー本体はディストリ任せの 3.12、アプリはコンテナの中で 3.14** という
+二段構えです。アプリが使う版を OS から切り離しておくと、
+OS を更新しても Python の版が動かず、逆も同じになります。
+コンテナの作り方は第2部で扱います。
+
+手元では、3.10 以上であればどれでも進められます。
+
+---
+
+### 4.2 仮想環境と Django のインストール
+
+<div class="env-block env-windows">
+
+```powershell
+py -3 -m venv .venv
+```
+
+</div>
+
+<div class="env-block env-macos env-linux">
+
+```bash
+python3 -m venv .venv
+```
+
+</div>
+
+仮想環境を有効化します。ここも OS で書き方が違います。
 
 <div class="env-block env-linux env-macos">
 
@@ -133,7 +267,7 @@ pip install Django==5.2.17 argon2-cffi
 > にあります。4件のうち3件は「この構成では踏まない」と判断できましたが、
 > **判断できたことと、更新しなくてよいことは別**です。
 
-### 4.2 プロジェクトとアプリの作成
+### 4.3 プロジェクトとアプリの作成
 
 ```bash
 django-admin startproject config .
@@ -150,7 +284,7 @@ python manage.py startapp blog
 `django-admin startproject config .` の末尾の `.`（ドット）を忘れないでください。
 これが無いと `config/config/settings.py` という一段深い構成になります。
 
-### 4.3 カスタムユーザーモデル
+### 4.4 カスタムユーザーモデル
 
 ```python
 # accounts/models.py
@@ -197,7 +331,7 @@ class User(AbstractUser):
         return self.display_name or self.username
 ```
 
-### 4.4 settings.py の要点
+### 4.5 settings.py の要点
 
 長いので、今日の要点だけを抜き出します。
 
@@ -283,7 +417,7 @@ if not DEBUG:
     SECURE_SSL_REDIRECT = True
 ```
 
-### 4.5 URLconf
+### 4.6 URLconf
 
 ```python
 # config/urls.py
@@ -302,7 +436,7 @@ if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 ```
 
-### 4.6 View とテンプレート
+### 4.7 View とテンプレート
 
 ```python
 # blog/views.py
@@ -438,18 +572,34 @@ accounts/migrations/0001_initial.py（設計図）
 
 ## 7. コマンドの説明
 
-### `python -m venv .venv`
+### `python3 -m venv .venv`（Windows は `py -3 -m venv .venv`）
 
 | 項目 | 内容 |
 | --- | --- |
 | 目的 | このプロジェクト専用の Python 環境を作る |
 | 実行場所 | プロジェクトのルート |
 | 正常例 | 何も表示されず、`.venv/` ができる |
-| 異常例 | `No module named venv`（Python が不完全） |
+| 異常例 | `No module named venv`（`python3-venv` が未導入） |
 | 判断方法 | `.venv/` の中に `Scripts`（Windows）か `bin`（Linux）がある |
 
 仮想環境を使うのは、プロジェクトごとにライブラリの版を分けるためです。
 分けないと、別のプロジェクトで Django を更新した瞬間にこちらが壊れます。
+
+> **`python` と `python3` の使い分けは、ここで終わります**
+>
+> ここまで `python3` と書いてきたのは、OS によって `python` が
+> 無かったり、2系だったり、3系だったりするからです。
+>
+> しかし **`.venv` を有効化した後は、`python` で構いません。**
+> `venv` が `.venv/bin/python`（Windows は `.venv\Scripts\python.exe`）を
+> 必ず作るためです。有効化するとそこが最初に見つかります。
+>
+> この記事のこれ以降と、2日目以降の `python manage.py ...` は、
+> すべて**有効化した後**の前提です。
+> `(.venv)` がプロンプトの先頭に出ていることを確認してください。
+>
+> 出ていない状態で `python manage.py` を打つと、
+> 8章の `ModuleNotFoundError: No module named 'django'` になります。
 
 ### `python manage.py makemigrations`
 
@@ -571,6 +721,61 @@ which python
 </div>
 
 プロジェクト内の `.venv` を指していれば正しい状態です。
+
+Linux で `which python` が**何も表示しない**ことがあります。
+壊れているのではなく、その環境に `python` という名前のコマンドが
+存在しないだけです（4.1 の表を参照）。`which python3` で見てください。
+
+### 8.4 `python3 -m venv` が「venv を入れろ」と言ってくる
+
+Ubuntu / Debian で起きます。
+
+```text
+The virtual environment was not created successfully because ensurepip is not
+available.  On Debian/Ubuntu systems, you need to install the python3-venv
+package using the following command.
+
+    apt install python3.12-venv
+
+You may need to use sudo with that command.  After installing the python3-venv
+package, recreate your virtual environment.
+
+Failing command: /tmp/.venv/bin/python3
+```
+
+`python3` は入っているのに `venv` だけが無い状態です。
+Debian / Ubuntu は Python の標準ライブラリを別パッケージに分けているため、
+`python3` を入れただけでは `venv` が付いてきません。
+
+```bash
+sudo apt install -y python3-venv
+```
+
+メッセージは `python3.12-venv` と版付きで案内してきますが、
+`python3-venv` を入れれば、その OS の既定の版に合ったものが入ります。
+
+そのうえで、作りかけの `.venv/` を消して作り直します。
+
+```bash
+rm -rf .venv && python3 -m venv .venv
+```
+
+実際に試すと、消さずに同じコマンドを再実行するだけでも直りました。
+それでも消すことを勧めるのは、**失敗した `.venv/` の残り方が
+気づきにくいから**です。中を見るとこうなっています。
+
+```text
+.venv/bin/
+├── python
+├── python3
+└── python3.12
+```
+
+**`activate` がありません。** `pip` もありません。
+この状態で `source .venv/bin/activate` を実行すると、
+シェルによっては何のメッセージも出さずに終了します。
+「有効化したつもりで、実は素の Python を使っていた」という、
+8.3 と同じ迷い方に合流します。
 
 ---
 
